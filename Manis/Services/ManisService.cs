@@ -1,0 +1,171 @@
+﻿using Gaia.Errors;
+using Gaia.Helpers;
+using Gaia.Services;
+using Manis.Contract.Errors;
+using Manis.Contract.Models;
+using Manis.Contract.Services;
+using Manis.Models;
+using Microsoft.EntityFrameworkCore;
+using Nestor.Db;
+using Zeus.Models;
+using Zeus.Services;
+
+namespace Manis.Services;
+
+public class ManisService : IManisService
+{
+    private readonly DbContext _dbContext;
+    private readonly ITokenFactory _tokenFactory;
+    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
+
+    public ManisService(DbContext dbContext, ITokenFactory tokenFactory,
+        IFactory<string, IHashService<string, string>> hashServiceFactory)
+    {
+        _dbContext = dbContext;
+        _tokenFactory = tokenFactory;
+        _hashServiceFactory = hashServiceFactory;
+    }
+
+    public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct)
+    {
+        var validationErrors = new List<ValidationError>();
+        var events = _dbContext.Set<EventEntity>();
+        var identities = request.SignIns.Select(x => x.Key).ToArray();
+        var result = new ManisGetResponse();
+
+        var ids = events.Where(y => events.GroupBy(x => x.EntityId)
+               .Select(e =>
+                    e.Where(x =>
+                            x.EntityId == e.Key
+                         && (x.EntityProperty == nameof(UserEntity.Login) ||
+                                x.EntityProperty == nameof(UserEntity.Email))
+                         && x.EntityType == nameof(UserEntity))
+                       .Max(x => x.Id))
+               .Contains(y.Id))
+           .Where(x => identities.Contains(x.EntityStringValue))
+           .Select(x => x.EntityId)
+           .Distinct();
+
+
+        var users = await UserEntity.GetUserEntitysAsync(events.Where(x => ids.Contains(x.EntityId)), ct);
+
+        foreach (var (identity, password) in request.SignIns)
+        {
+            var user = users.SingleOrDefault(x => x.Login == identity || x.Email == identity);
+
+            if (user is null)
+            {
+                validationErrors.Add(new UserNotFoundValidationError(identity));
+
+                continue;
+            }
+
+            var hashService = _hashServiceFactory.Create(user.PasswordHashMethod);
+
+            if (hashService.ComputeHash($"{user.PasswordSalt};{password}") == user.PasswordHash)
+            {
+                result.SignIns.Add(user.Login, _tokenFactory.Create(new()
+                {
+                    Email = user.Email,
+                    Login = user.Login,
+                    Id = user.Id,
+                    Role = Role.User,
+                }));
+            }
+            else
+            {
+                validationErrors.Add(new InvalidPasswordValidationError(identity));
+            }
+        }
+
+        result.ValidationErrors = validationErrors.ToArray();
+
+        return result;
+    }
+
+    public async ValueTask<ManisPostResponse> PostAsync(ManisPostRequest request, CancellationToken ct)
+    {
+        var validationErrors = new List<ValidationError>();
+        var events = _dbContext.Set<EventEntity>();
+        var identities = request.CreateUsers.Select(x => new[] { x.Email, x.Login }).SelectMany(x => x).ToArray();
+        var result = new ManisPostResponse();
+
+        var ids = events.Where(y => events.GroupBy(x => x.EntityId)
+               .Select(e =>
+                    e.Where(x =>
+                            x.EntityId == e.Key
+                         && (x.EntityProperty == nameof(UserEntity.Login) ||
+                                x.EntityProperty == nameof(UserEntity.Email))
+                         && x.EntityType == nameof(UserEntity))
+                       .Max(x => x.Id))
+               .Contains(y.Id))
+           .Where(x => identities.Contains(x.EntityStringValue))
+           .Select(x => x.EntityId)
+           .Distinct();
+
+        var users = await UserEntity.GetUserEntitysAsync(events.Where(x => ids.Contains(x.EntityId)), ct);
+
+        foreach (var createUser in request.CreateUsers)
+        {
+            var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
+
+            if (userByEmail is not null)
+            {
+                validationErrors.Add(new UserAlreadyExistsValidationError(createUser.Email));
+
+                continue;
+            }
+
+            var userByLogin = users.SingleOrDefault(x => x.Login == createUser.Login);
+
+            if (userByLogin is not null)
+            {
+                validationErrors.Add(new UserAlreadyExistsValidationError(createUser.Login));
+
+                continue;
+            }
+
+            if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
+            {
+                if (!validationErrors.Any(x => x is DuplicationValidationError error && error.Identity == createUser.Email))
+                {
+                    validationErrors.Add(new DuplicationValidationError(createUser.Email));
+                }
+
+
+                continue;
+            }
+
+            if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
+            {
+                if (!validationErrors.Any(x => x is DuplicationValidationError error && error.Identity == createUser.Login))
+                {
+                    validationErrors.Add(new DuplicationValidationError(createUser.Login));
+                }
+
+
+                continue;
+            }
+
+            var id = Guid.NewGuid();
+            var salt = Guid.NewGuid().ToString();
+
+            await UserEntity.AddUserEntitysAsync(_dbContext, id.ToString(), ct, [
+                new()
+                {
+                    Login = createUser.Login,
+                    Email = createUser.Email,
+                    PasswordSalt = salt,
+                    PasswordHash = _hashServiceFactory.Create(NameHelper.Utf8Sha512Hex).ComputeHash($"{salt};{createUser.Password}"),
+                    PasswordHashMethod = NameHelper.Utf8Sha512Hex,
+                    Id = id,
+                },
+            ]);
+        }
+
+        request.ValidationErrors = validationErrors.ToArray();
+        await _dbContext.SaveChangesAsync(ct);
+
+        return result;
+    }
+}
