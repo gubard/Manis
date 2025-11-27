@@ -17,13 +17,15 @@ public class ManisService : IManisService
     private readonly DbContext _dbContext;
     private readonly ITokenFactory _tokenFactory;
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
+    private readonly IManisValidator _manisValidator;
 
     public ManisService(DbContext dbContext, ITokenFactory tokenFactory,
-        IFactory<string, IHashService<string, string>> hashServiceFactory)
+        IFactory<string, IHashService<string, string>> hashServiceFactory, IManisValidator manisValidator)
     {
         _dbContext = dbContext;
         _tokenFactory = tokenFactory;
         _hashServiceFactory = hashServiceFactory;
+        _manisValidator = manisValidator;
     }
 
     public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct)
@@ -87,7 +89,11 @@ public class ManisService : IManisService
     {
         var validationErrors = new List<ValidationError>();
         var events = _dbContext.Set<EventEntity>();
-        var identities = request.CreateUsers.Select(x => new[] { x.Email, x.Login }).SelectMany(x => x).ToArray();
+        var identities = request.CreateUsers.Select(x => new[]
+        {
+            x.Email,
+            x.Login,
+        }).SelectMany(x => x).ToArray();
         var result = new ManisPostResponse();
 
         var ids = events.Where(y => events.GroupBy(x => x.EntityId)
@@ -107,6 +113,14 @@ public class ManisService : IManisService
 
         foreach (var createUser in request.CreateUsers)
         {
+            var errors = ValidateCreateUser(createUser);
+            validationErrors.AddRange(errors);
+
+            if (errors.Any())
+            {
+                continue;
+            }
+
             var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
 
             if (userByEmail is not null)
@@ -167,5 +181,15 @@ public class ManisService : IManisService
         await _dbContext.SaveChangesAsync(ct);
 
         return result;
+    }
+
+    private ValidationError[] ValidateCreateUser(CreateUser createUser)
+    {
+        var result = new List<ValidationError>();
+        result.AddRange(_manisValidator.Validate(createUser.Email, nameof(createUser.Email)));
+        result.AddRange(_manisValidator.Validate(createUser.Login, nameof(createUser.Login)));
+        result.AddRange(_manisValidator.Validate(createUser.Password, nameof(createUser.Password)));
+
+        return result.ToArray();
     }
 }
