@@ -1,4 +1,5 @@
 ﻿using Nestor.Db;
+using Nestor.Db.Models;
 
 namespace Manis.Models;
 
@@ -11,4 +12,6 @@ public partial class UserEntity
     public string PasswordHash { get; set; } = string.Empty;
     public string PasswordHashMethod { get; set; } = string.Empty;
     public string PasswordSalt { get; set; } = string.Empty;
+    public bool IsActivated { get; set; }
+    public string ActivationCode { get; set; } = string.Empty;
 }

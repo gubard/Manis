@@ -25,6 +25,9 @@ builder.Services.AddTransient<SHA512>(_ => SHA512.Create());
 builder.Services.AddTransient<Sha512HashService>();
 builder.Services.AddTransient<StringToUtf8>();
 builder.Services.AddTransient<BytesToHex>();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.TypeInfoResolver = ManisJsonContext.Resolver
+);
 builder.Services.AddTransient<IFactory<string, IHashService<string, string>>>(sp =>
 {
     var dic = new Dictionary<string, IHashService<string, string>>
@@ -56,10 +59,5 @@ app.MapPost(RouteHelper.Post,
         (ManisPostRequest request, IManisService manisService, CancellationToken ct) =>
             manisService.PostAsync(request, ct))
    .WithName(RouteHelper.PostName);
-
-using (var scope = app.Services.CreateScope())
-{
-    scope.ServiceProvider.GetRequiredService<DbContext>().Database.Migrate();
-}
 
 app.Run();

@@ -7,6 +7,8 @@ using Manis.Contract.Services;
 using Manis.Models;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db;
+using Nestor.Db.Helpers;
+using Nestor.Db.Models;
 using Zeus.Models;
 using Zeus.Services;
 
@@ -18,6 +20,7 @@ public class ManisService : IManisService
     private readonly ITokenFactory _tokenFactory;
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
     private readonly IManisValidator _manisValidator;
+    private static readonly string[] Identities = [nameof(UserEntity.Login), nameof(UserEntity.Email)];
 
     public ManisService(DbContext dbContext, ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory, IManisValidator manisValidator)
@@ -35,19 +38,13 @@ public class ManisService : IManisService
         var identities = request.SignIns.Select(x => x.Key).ToArray();
         var result = new ManisGetResponse();
 
-        var ids = events.Where(y => events.GroupBy(x => x.EntityId)
-               .Select(e =>
-                    e.Where(x =>
-                            x.EntityId == e.Key
-                         && (x.EntityProperty == nameof(UserEntity.Login) ||
-                                x.EntityProperty == nameof(UserEntity.Email))
-                         && x.EntityType == nameof(UserEntity))
-                       .Max(x => x.Id))
-               .Contains(y.Id))
+        var ids = events.GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
            .Where(x => identities.Contains(x.EntityStringValue))
            .Select(x => x.EntityId)
-           .Distinct();
-
+           .Distinct()
+           .Concat(events.GetProperty(nameof(UserEntity), nameof(UserEntity.Login)).Where(x => identities.Contains(x.EntityStringValue))
+               .Select(x => x.EntityId)
+               .Distinct());
 
         var users = await UserEntity.GetUserEntitysAsync(events.Where(x => ids.Contains(x.EntityId)), ct);
 
@@ -57,10 +54,17 @@ public class ManisService : IManisService
 
             if (user is null)
             {
-                validationErrors.Add(new UserNotFoundValidationError(identity));
+                validationErrors.Add(new NotFoundValidationError(identity));
 
                 continue;
             }
+
+            /*if (!user.IsActivated)
+            {
+                validationErrors.Add(new UserNotActivatedValidationError(identity));
+
+                continue;
+            }*/
 
             var hashService = _hashServiceFactory.Create(user.PasswordHashMethod);
 
@@ -125,7 +129,7 @@ public class ManisService : IManisService
 
             if (userByEmail is not null)
             {
-                validationErrors.Add(new UserAlreadyExistsValidationError(createUser.Email));
+                validationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
 
                 continue;
             }
@@ -134,7 +138,7 @@ public class ManisService : IManisService
 
             if (userByLogin is not null)
             {
-                validationErrors.Add(new UserAlreadyExistsValidationError(createUser.Login));
+                validationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
 
                 continue;
             }
@@ -177,7 +181,7 @@ public class ManisService : IManisService
             ]);
         }
 
-        request.ValidationErrors = validationErrors.ToArray();
+        result.ValidationErrors = validationErrors.ToArray();
         await _dbContext.SaveChangesAsync(ct);
 
         return result;
