@@ -4,9 +4,9 @@ using Gaia.Services;
 
 namespace Manis.Contract.Services;
 
-public interface IManisValidator : IValidator<string>;
+public interface IAuthenticationValidator : IValidator<string>;
 
-public class ManisValidator : IManisValidator
+public class AuthenticationValidator : IAuthenticationValidator
 {
     private const string LoginIdentity = "Login";
     private const string PasswordIdentity = "Password";

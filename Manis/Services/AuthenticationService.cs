@@ -18,16 +18,16 @@ public class AuthenticationService : IAuthenticationService
     private readonly DbContext _dbContext;
     private readonly ITokenFactory _tokenFactory;
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
-    private readonly IManisValidator _manisValidator;
+    private readonly IAuthenticationValidator _authenticationValidator;
     private static readonly string[] Identities = [nameof(UserEntity.Login), nameof(UserEntity.Email)];
 
     public AuthenticationService(DbContext dbContext, ITokenFactory tokenFactory,
-        IFactory<string, IHashService<string, string>> hashServiceFactory, IManisValidator manisValidator)
+        IFactory<string, IHashService<string, string>> hashServiceFactory, IAuthenticationValidator authenticationValidator)
     {
         _dbContext = dbContext;
         _tokenFactory = tokenFactory;
         _hashServiceFactory = hashServiceFactory;
-        _manisValidator = manisValidator;
+        _authenticationValidator = authenticationValidator;
     }
 
     public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct)
@@ -189,9 +189,9 @@ public class AuthenticationService : IAuthenticationService
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
     {
         var result = new List<ValidationError>();
-        result.AddRange(_manisValidator.Validate(createUser.Email, nameof(createUser.Email)));
-        result.AddRange(_manisValidator.Validate(createUser.Login, nameof(createUser.Login)));
-        result.AddRange(_manisValidator.Validate(createUser.Password, nameof(createUser.Password)));
+        result.AddRange(_authenticationValidator.Validate(createUser.Email, nameof(createUser.Email)));
+        result.AddRange(_authenticationValidator.Validate(createUser.Login, nameof(createUser.Login)));
+        result.AddRange(_authenticationValidator.Validate(createUser.Password, nameof(createUser.Password)));
 
         return result.ToArray();
     }

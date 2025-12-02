@@ -18,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
-builder.Services.AddTransient<IManisValidator, ManisValidator>();
+builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
 builder.Services.AddTransient<JwtSecurityTokenHandler>();
 builder.Services.AddTransient<SHA512>(_ => SHA512.Create());
