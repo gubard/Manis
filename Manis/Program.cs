@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddTransient<IManisService, ManisService>();
+builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 builder.Services.AddTransient<IManisValidator, ManisValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
 builder.Services.AddTransient<JwtSecurityTokenHandler>();
@@ -51,13 +51,13 @@ if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
 
 app.MapPost(RouteHelper.Get,
-        (ManisGetRequest request, IManisService manisService, CancellationToken ct) =>
-            manisService.GetAsync(request, ct))
+        (ManisGetRequest request, IAuthenticationService authenticationService, CancellationToken ct) =>
+            authenticationService.GetAsync(request, ct))
    .WithName(RouteHelper.GetName);
 
 app.MapPost(RouteHelper.Post,
-        (ManisPostRequest request, IManisService manisService, CancellationToken ct) =>
-            manisService.PostAsync(request, ct))
+        (ManisPostRequest request, IAuthenticationService authenticationService, CancellationToken ct) =>
+            authenticationService.PostAsync(request, ct))
    .WithName(RouteHelper.PostName);
 
 app.Run();

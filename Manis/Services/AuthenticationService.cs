@@ -13,7 +13,7 @@ using Zeus.Services;
 
 namespace Manis.Services;
 
-public class ManisService : IManisService
+public class AuthenticationService : IAuthenticationService
 {
     private readonly DbContext _dbContext;
     private readonly ITokenFactory _tokenFactory;
@@ -21,7 +21,7 @@ public class ManisService : IManisService
     private readonly IManisValidator _manisValidator;
     private static readonly string[] Identities = [nameof(UserEntity.Login), nameof(UserEntity.Email)];
 
-    public ManisService(DbContext dbContext, ITokenFactory tokenFactory,
+    public AuthenticationService(DbContext dbContext, ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory, IManisValidator manisValidator)
     {
         _dbContext = dbContext;

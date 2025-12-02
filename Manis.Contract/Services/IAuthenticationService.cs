@@ -2,7 +2,7 @@
 
 namespace Manis.Contract.Services;
 
-public interface IManisService
+public interface IAuthenticationService
 {
     ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct);
     ValueTask<ManisPostResponse> PostAsync(ManisPostRequest request, CancellationToken ct);
