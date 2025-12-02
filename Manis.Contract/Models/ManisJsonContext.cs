@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Gaia.Errors;
-using Manis.Contract.Errors;
 
 namespace Manis.Contract.Models;
 

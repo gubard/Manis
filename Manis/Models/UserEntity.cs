@@ -1,5 +1,4 @@
-﻿using Nestor.Db;
-using Nestor.Db.Models;
+﻿using Nestor.Db.Models;
 
 namespace Manis.Models;
 
