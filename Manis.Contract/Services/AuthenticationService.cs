@@ -1,9 +1,6 @@
-﻿using Manis.Contract.Models;
+﻿using Gaia.Services;
+using Manis.Contract.Models;
 
 namespace Manis.Contract.Services;
 
-public interface IAuthenticationService
-{
-    ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct);
-    ValueTask<ManisPostResponse> PostAsync(ManisPostRequest request, CancellationToken ct);
-}
+public interface IAuthenticationService : IService<ManisGetRequest, ManisPostRequest, ManisGetResponse, ManisPostResponse>;
