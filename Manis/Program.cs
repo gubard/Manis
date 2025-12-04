@@ -25,6 +25,7 @@ builder.Services.AddTransient<SHA512>(_ => SHA512.Create());
 builder.Services.AddTransient<Sha512HashService>();
 builder.Services.AddTransient<StringToUtf8>();
 builder.Services.AddTransient<BytesToHex>();
+builder.Services.AddTransient<IStorageService, StorageService>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolver = ManisJsonContext.Resolver
 );
@@ -41,8 +42,8 @@ builder.Services.AddTransient<IFactory<string, IHashService<string, string>>>(sp
     return new HashServiceFactory(dic.ToFrozenDictionary());
 });
 builder.Services.AddTransient<JwtTokenFactoryOptions>(sp => sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt"));
-builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>(options =>
-    options.UseSqlite("Data Source=manis.db", x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly)));
+builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>((sp, options) =>
+    options.UseSqlite($"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}", x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly)));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -60,4 +61,5 @@ app.MapPost(RouteHelper.Post,
             authenticationService.PostAsync(request, ct))
    .WithName(RouteHelper.PostName);
 
+app.Services.CreateDbDirectory();
 app.Run();

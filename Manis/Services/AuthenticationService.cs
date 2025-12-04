@@ -19,7 +19,6 @@ public class AuthenticationService : IAuthenticationService
     private readonly ITokenFactory _tokenFactory;
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
     private readonly IAuthenticationValidator _authenticationValidator;
-    private static readonly string[] Identities = [nameof(UserEntity.Login), nameof(UserEntity.Email)];
 
     public AuthenticationService(DbContext dbContext, ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory, IAuthenticationValidator authenticationValidator)
@@ -112,7 +111,7 @@ public class AuthenticationService : IAuthenticationService
            .Select(x => x.EntityId)
            .Distinct();
 
-        var users = await UserEntity.GetUserEntitysAsync(events.Where(x => ids.Contains(x.EntityId)), ct);
+        var users = await UserEntity.GetUserEntitysAsync(events.Where(x => ids.Contains(x.EntityId)).AsNoTracking(), ct);
 
         foreach (var createUser in request.CreateUsers)
         {
