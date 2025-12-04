@@ -1,5 +1,5 @@
-﻿using Gaia.Errors;
-using Gaia.Helpers;
+﻿using Gaia.Helpers;
+using Gaia.Models;
 using Gaia.Services;
 
 namespace Manis.Contract.Services;

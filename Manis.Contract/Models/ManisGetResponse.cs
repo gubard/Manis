@@ -1,11 +1,10 @@
-﻿using Gaia.Errors;
+﻿using Gaia.Models;
 using Gaia.Services;
-using Zeus.Models;
 
 namespace Manis.Contract.Models;
 
 public class ManisGetResponse : IValidationErrors
 {
     public Dictionary<string, TokenResult> SignIns { get; set; } = [];
-    public ValidationError[] ValidationErrors { get; set; } = [];
+    public List<ValidationError> ValidationErrors { get; set; } = [];
 }

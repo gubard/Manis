@@ -1,5 +1,5 @@
-﻿using Gaia.Errors;
-using Gaia.Helpers;
+﻿using Gaia.Helpers;
+using Gaia.Models;
 using Gaia.Services;
 using Manis.Contract.Errors;
 using Manis.Contract.Models;
@@ -31,7 +31,6 @@ public class AuthenticationService : IAuthenticationService
 
     public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct)
     {
-        var validationErrors = new List<ValidationError>();
         var events = _dbContext.Set<EventEntity>();
         var identities = request.SignIns.Select(x => x.Key).ToArray();
         var result = new ManisGetResponse();
@@ -52,7 +51,7 @@ public class AuthenticationService : IAuthenticationService
 
             if (user is null)
             {
-                validationErrors.Add(new NotFoundValidationError(identity));
+                result.ValidationErrors.Add(new NotFoundValidationError(identity));
 
                 continue;
             }
@@ -78,18 +77,15 @@ public class AuthenticationService : IAuthenticationService
             }
             else
             {
-                validationErrors.Add(new InvalidPasswordValidationError(identity));
+                result.ValidationErrors.Add(new InvalidPasswordValidationError(identity));
             }
         }
-
-        result.ValidationErrors = validationErrors.ToArray();
 
         return result;
     }
 
     public async ValueTask<ManisPostResponse> PostAsync(ManisPostRequest request, CancellationToken ct)
     {
-        var validationErrors = new List<ValidationError>();
         var events = _dbContext.Set<EventEntity>();
         var identities = request.CreateUsers.Select(x => new[]
         {
@@ -116,7 +112,7 @@ public class AuthenticationService : IAuthenticationService
         foreach (var createUser in request.CreateUsers)
         {
             var errors = ValidateCreateUser(createUser);
-            validationErrors.AddRange(errors);
+            result.ValidationErrors.AddRange(errors);
 
             if (errors.Any())
             {
@@ -127,7 +123,7 @@ public class AuthenticationService : IAuthenticationService
 
             if (userByEmail is not null)
             {
-                validationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
+                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
 
                 continue;
             }
@@ -136,16 +132,16 @@ public class AuthenticationService : IAuthenticationService
 
             if (userByLogin is not null)
             {
-                validationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
+                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
 
                 continue;
             }
 
             if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
             {
-                if (!validationErrors.Any(x => x is DuplicationValidationError error && error.Identity == createUser.Email))
+                if (!result.ValidationErrors.Any(x => x is DuplicationValidationError error && error.Identity == createUser.Email))
                 {
-                    validationErrors.Add(new DuplicationValidationError(createUser.Email));
+                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Email));
                 }
 
 
@@ -154,9 +150,9 @@ public class AuthenticationService : IAuthenticationService
 
             if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
             {
-                if (!validationErrors.Any(x => x is DuplicationValidationError error && error.Identity == createUser.Login))
+                if (!result.ValidationErrors.Any(x => x is DuplicationValidationError error && error.Identity == createUser.Login))
                 {
-                    validationErrors.Add(new DuplicationValidationError(createUser.Login));
+                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Login));
                 }
 
 
@@ -179,7 +175,6 @@ public class AuthenticationService : IAuthenticationService
             ]);
         }
 
-        result.ValidationErrors = validationErrors.ToArray();
         await _dbContext.SaveChangesAsync(ct);
 
         return result;

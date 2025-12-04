@@ -1,4 +1,4 @@
-﻿using Gaia.Errors;
+﻿using Gaia.Models;
 
 namespace Manis.Contract.Errors;
 

@@ -4,8 +4,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
-
     <ItemGroup>
-      <ProjectReference Include="..\..\Zeus\Zeus\Zeus.csproj" />
+      <ProjectReference Include="..\..\Gaia\Gaia\Gaia.csproj" />
     </ItemGroup>
 </Project>
