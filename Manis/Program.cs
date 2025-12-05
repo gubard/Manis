@@ -62,5 +62,5 @@ app.MapPost(RouteHelper.Post,
    .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
-await app.Services.MigrateDbAsync("manis.migration");
-app.Run();
+await app.Services.MigrateDbAsync("manis.migration", CancellationToken.None);
+await app.RunAsync(CancellationToken.None);
