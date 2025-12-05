@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Zeus/">
+    <Project Path="../Zeus/Zeus/Zeus.csproj" />
+  </Folder>
+  <Project Path="Manis.Contract/Manis.Contract.csproj" />
+  <Project Path="Manis/Manis.csproj" />
+</Solution>
