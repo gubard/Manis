@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Gaia.Models;
+using Manis.Contract.Errors;
 
 namespace Manis.Contract.Models;
 
@@ -11,6 +12,7 @@ namespace Manis.Contract.Models;
 [JsonSerializable(typeof(CreateUser))]
 [JsonSerializable(typeof(AlreadyExistsValidationError))]
 [JsonSerializable(typeof(NotFoundValidationError))]
+[JsonSerializable(typeof(InvalidPasswordValidationError))]
 public partial class ManisJsonContext : JsonSerializerContext
 {
     public static readonly IJsonTypeInfoResolver Resolver;
@@ -28,6 +30,7 @@ public partial class ManisJsonContext : JsonSerializerContext
                     {
                         new(typeof(AlreadyExistsValidationError), typeof(AlreadyExistsValidationError).FullName!),
                         new(typeof(NotFoundValidationError), typeof(NotFoundValidationError).FullName!),
+                        new(typeof(InvalidPasswordValidationError), typeof(InvalidPasswordValidationError).FullName!),
                     },
                 };
             }
