@@ -5,6 +5,7 @@ using Gaia.Helpers;
 using Gaia.Services;
 using Manis.Contract.Models;
 using Manis.Contract.Services;
+using Manis.Models;
 using Manis.Services;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Sqlite;
