@@ -10,8 +10,6 @@ using Manis.Services;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Sqlite;
 using Zeus.Helpers;
-using Zeus.Models;
-using Zeus.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
