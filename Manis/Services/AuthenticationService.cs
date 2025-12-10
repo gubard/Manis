@@ -36,67 +36,10 @@ public class AuthenticationService : IAuthenticationService
     public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request,
         CancellationToken ct)
     {
-        var events = _dbContext.Set<EventEntity>();
-        var identities = request.SignIns.Select(x => x.Key).ToArray();
-        var result = new ManisGetResponse();
-
-        var ids = events
-           .GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
-           .Where(x => identities.Contains(x.EntityStringValue))
-           .Select(x => x.EntityId)
-           .Distinct()
-           .Concat(events
-               .GetProperty(nameof(UserEntity), nameof(UserEntity.Login))
-               .Where(x => identities.Contains(x.EntityStringValue))
-               .Select(x => x.EntityId)
-               .Distinct());
-
         var users =
-            await UserEntity.GetUserEntitysAsync(
-                events.Where(x => ids.Contains(x.EntityId)), ct);
+            await UserEntity.GetUserEntitysAsync(CreateQuery(request), ct);
 
-        foreach (var (identity, password) in request.SignIns)
-        {
-            var user = users.SingleOrDefault(x =>
-                x.Login == identity || x.Email == identity);
-
-            if (user is null)
-            {
-                result.ValidationErrors.Add(
-                    new NotFoundValidationError(identity));
-
-                continue;
-            }
-
-            /*if (!user.IsActivated)
-            {
-                validationErrors.Add(new UserNotActivatedValidationError(identity));
-
-                continue;
-            }*/
-
-            var hashService =
-                _hashServiceFactory.Create(user.PasswordHashMethod);
-
-            if (hashService.ComputeHash($"{user.PasswordSalt};{password}")
-             == user.PasswordHash)
-            {
-                result.SignIns.Add(user.Login, _tokenFactory.Create(new()
-                {
-                    Email = user.Email,
-                    Login = user.Login,
-                    Id = user.Id,
-                    Role = Role.User,
-                }));
-            }
-            else
-            {
-                result.ValidationErrors.Add(
-                    new InvalidPasswordValidationError(identity));
-            }
-        }
-
-        return result;
+        return CreateResponse(request, users);
     }
 
     public async ValueTask<ManisPostResponse> PostAsync(
@@ -319,6 +262,13 @@ public class AuthenticationService : IAuthenticationService
         return result;
     }
 
+    public ManisGetResponse Get(ManisGetRequest request)
+    {
+        var users = UserEntity.GetUserEntitys(CreateQuery(request));
+
+        return CreateResponse(request, users);
+    }
+
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
     {
         var result = new List<ValidationError>();
@@ -330,5 +280,65 @@ public class AuthenticationService : IAuthenticationService
             nameof(createUser.Password)));
 
         return result.ToArray();
+    }
+
+    private IQueryable<EventEntity> CreateQuery(ManisGetRequest request)
+    {
+        var events = _dbContext.Set<EventEntity>();
+        var identities = request.SignIns.Select(x => x.Key).ToArray();
+        var ids = events
+           .GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
+           .Where(x => identities.Contains(x.EntityStringValue))
+           .Select(x => x.EntityId)
+           .Distinct()
+           .Concat(events
+               .GetProperty(nameof(UserEntity), nameof(UserEntity.Login))
+               .Where(x => identities.Contains(x.EntityStringValue))
+               .Select(x => x.EntityId)
+               .Distinct());
+
+        return events.Where(x => ids.Contains(x.EntityId));
+    }
+
+    private ManisGetResponse CreateResponse(ManisGetRequest request,
+        UserEntity[] users)
+    {
+        var result = new ManisGetResponse();
+
+        foreach (var (identity, password) in request.SignIns)
+        {
+            var user = users.SingleOrDefault(x =>
+                x.Login == identity || x.Email == identity);
+
+            if (user is null)
+            {
+                result.ValidationErrors.Add(
+                    new NotFoundValidationError(identity));
+
+                continue;
+            }
+
+            var hashService =
+                _hashServiceFactory.Create(user.PasswordHashMethod);
+
+            if (hashService.ComputeHash($"{user.PasswordSalt};{password}")
+             == user.PasswordHash)
+            {
+                result.SignIns.Add(user.Login, _tokenFactory.Create(new()
+                {
+                    Email = user.Email,
+                    Login = user.Login,
+                    Id = user.Id,
+                    Role = Role.User,
+                }));
+            }
+            else
+            {
+                result.ValidationErrors.Add(
+                    new InvalidPasswordValidationError(identity));
+            }
+        }
+
+        return result;
     }
 }
