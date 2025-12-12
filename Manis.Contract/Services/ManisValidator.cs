@@ -1,4 +1,5 @@
-﻿using Gaia.Helpers;
+﻿using System.Buffers;
+using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
 
@@ -8,79 +9,84 @@ public interface IAuthenticationValidator : IValidator<string>;
 
 public class AuthenticationValidator : IAuthenticationValidator
 {
-    private const string LoginIdentity = "Login";
-    private const string PasswordIdentity = "Password";
-    private const string EmailIdentity = "Email";
+    private const string ValidLoginChars =
+        StringHelper.UpperLatin + StringHelper.LowerLatin + StringHelper.Number + "+-";
+
+    private static readonly SearchValues<char> ValidLoginValues = SearchValues.Create(ValidLoginChars);
 
     public ValidationError[] Validate(string value, string identity)
     {
         switch (identity)
         {
-            case LoginIdentity:
+            case "Login":
             {
-                if (value.IsNullOrWhiteSpace())
-                {
-                    return [new PropertyEmptyValidationError("Login")];
-                }
-
                 if (value.Length > 255)
                 {
-                    return [new PropertyMaxSizeValidationError("Login", (ulong)value.Length, 255)];
+                    return [new PropertyMaxSizeValidationError("Login", (ulong)value.Length, 255),];
+                }
+
+                if (value.IsNullOrWhiteSpace())
+                {
+                    return [new PropertyEmptyValidationError("Login"),];
                 }
 
                 if (value.Length < 3)
                 {
-                    return [new PropertyMinSizeValidationError("Login", (ulong)value.Length, 3)];
+                    return [new PropertyMinSizeValidationError("Login", (ulong)value.Length, 3),];
                 }
 
-                var index = value.IndexOfAnyExcept(StringHelper.ValidLoginSearch);
+                var index = value.IndexOfAnyExcept(ValidLoginValues);
 
                 if (index >= 0)
                 {
-                    return [new PropertyContainsInvalidValueValidationError<char>("Login", value[index], StringHelper.ValidLoginChar.ToCharArray())];
+                    return
+                    [
+                        new PropertyContainsInvalidValueValidationError<char>("Login", value[index],
+                            ValidLoginChars.ToCharArray()),
+                    ];
                 }
 
                 return [];
             }
-            case PasswordIdentity:
+            case "Password":
             {
-                if (value.IsNullOrWhiteSpace())
-                {
-                    return [new PropertyEmptyValidationError("password")];
-                }
-
                 if (value.Length > 512)
                 {
-                    return [new PropertyMaxSizeValidationError("password", (ulong)value.Length, 512)];
+                    return [new PropertyMaxSizeValidationError("Password", (ulong)value.Length, 512),];
+                }
+
+                if (value.IsNullOrWhiteSpace())
+                {
+                    return [new PropertyEmptyValidationError("Password"),];
                 }
 
                 if (value.Length < 8)
                 {
-                    return [new PropertyMinSizeValidationError("password", (ulong)value.Length, 5)];
+                    return [new PropertyMinSizeValidationError("Password", (ulong)value.Length, 5),];
                 }
 
                 return [];
             }
-            case EmailIdentity:
+            case "Email":
             {
+                if (value.Length > 255)
+                {
+                    return [new PropertyMaxSizeValidationError("Email", (ulong)value.Length, 255),];
+                }
+
                 if (value.IsNullOrWhiteSpace())
                 {
-                    return [new PropertyEmptyValidationError("email")];
+                    return [new PropertyEmptyValidationError("Email"),];
                 }
 
                 if (!value.IsEmail())
                 {
-                    return [new PropertyInvalidValidationError("email")];
-                }
-
-                if (value.Length > 255)
-                {
-                    return [new PropertyMaxSizeValidationError("email", (ulong)value.Length, 255)];
+                    return [new PropertyInvalidValidationError("Email"),];
                 }
 
                 if (value.Length < 5)
                 {
-                    return [new PropertyMinSizeValidationError("email", (ulong)value.Length, 5)];
+                    return [new PropertyMinSizeValidationError("Email", (ulong)value.Length, 5),];
                 }
 
                 return [];
