@@ -37,7 +37,7 @@ public class AuthenticationService : IAuthenticationService
         CancellationToken ct)
     {
         var users =
-            await UserEntity.GetUserEntitysAsync(CreateQuery(request), ct);
+            await UserEntity.GetEntitiesAsync(CreateQuery(request), ct);
 
         return CreateResponse(request, users);
     }
@@ -66,7 +66,7 @@ public class AuthenticationService : IAuthenticationService
            .Select(x => x.EntityId)
            .Distinct();
 
-        var users = await UserEntity.GetUserEntitysAsync(
+        var users = await UserEntity.GetEntitiesAsync(
             events.Where(x => ids.Contains(x.EntityId)).AsNoTracking(), ct);
 
         foreach (var createUser in request.CreateUsers)
@@ -132,7 +132,7 @@ public class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            await UserEntity.AddUserEntitysAsync(_dbContext, id.ToString(), ct,
+            await UserEntity.AddEntitiesAsync(_dbContext, id.ToString(), ct,
             [
                 new()
                 {
@@ -176,7 +176,7 @@ public class AuthenticationService : IAuthenticationService
            .Select(x => x.EntityId)
            .Distinct();
 
-        var users = UserEntity.GetUserEntitys(events
+        var users = UserEntity.GetEntities(events
            .Where(x => ids.Contains(x.EntityId)).AsNoTracking());
 
         foreach (var createUser in request.CreateUsers)
@@ -242,7 +242,7 @@ public class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            UserEntity.AddUserEntitys(_dbContext, id.ToString(), [
+            UserEntity.AddEntities(_dbContext, id.ToString(), [
                 new()
                 {
                     Login = createUser.Login,
@@ -264,7 +264,7 @@ public class AuthenticationService : IAuthenticationService
 
     public ManisGetResponse Get(ManisGetRequest request)
     {
-        var users = UserEntity.GetUserEntitys(CreateQuery(request));
+        var users = UserEntity.GetEntities(CreateQuery(request));
 
         return CreateResponse(request, users);
     }
