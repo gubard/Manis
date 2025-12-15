@@ -33,32 +33,54 @@ builder.Services.AddTransient<IFactory<string, IHashService<string, string>>>(sp
     var dic = new Dictionary<string, IHashService<string, string>>
     {
         {
-            NameHelper.Utf8Sha512Hex, new StringHashService(sp.GetRequiredService<Sha512HashService>(), sp.GetRequiredService<StringToUtf8>(),
-                sp.GetRequiredService<BytesToHex>())
+            NameHelper.Utf8Sha512Hex,
+            new StringHashService(
+                sp.GetRequiredService<Sha512HashService>(),
+                sp.GetRequiredService<StringToUtf8>(),
+                sp.GetRequiredService<BytesToHex>()
+            )
         },
     };
 
     return new HashServiceFactory(dic.ToFrozenDictionary());
 });
-builder.Services.AddTransient<JwtTokenFactoryOptions>(sp => sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt"));
-builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>((sp, options) =>
-    options.UseSqlite($"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}", x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly)));
+builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
+    sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt")
+);
+builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>(
+    (sp, options) =>
+        options.UseSqlite(
+            $"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}",
+            x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly)
+        )
+);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment()) app.MapOpenApi();
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
 
 app.UseHttpsRedirection();
 
-app.MapPost(RouteHelper.Get,
-        (ManisGetRequest request, IAuthenticationService authenticationService, CancellationToken ct) =>
-            authenticationService.GetAsync(request, ct))
-   .WithName(RouteHelper.GetName);
+app.MapPost(
+        RouteHelper.Get,
+        (
+            ManisGetRequest request,
+            IAuthenticationService authenticationService,
+            CancellationToken ct
+        ) => authenticationService.GetAsync(request, ct)
+    )
+    .WithName(RouteHelper.GetName);
 
-app.MapPost(RouteHelper.Post,
-        (ManisPostRequest request, IAuthenticationService authenticationService, CancellationToken ct) =>
-            authenticationService.PostAsync(request, ct))
-   .WithName(RouteHelper.PostName);
+app.MapPost(
+        RouteHelper.Post,
+        (
+            ManisPostRequest request,
+            IAuthenticationService authenticationService,
+            CancellationToken ct
+        ) => authenticationService.PostAsync(request, ct)
+    )
+    .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
 await app.Services.MigrateDbAsync("manis.migration", CancellationToken.None);

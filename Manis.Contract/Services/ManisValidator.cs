@@ -12,7 +12,9 @@ public class AuthenticationValidator : IAuthenticationValidator
     private const string ValidLoginChars =
         StringHelper.UpperLatin + StringHelper.LowerLatin + StringHelper.Number + "+-";
 
-    private static readonly SearchValues<char> ValidLoginValues = SearchValues.Create(ValidLoginChars);
+    private static readonly SearchValues<char> ValidLoginValues = SearchValues.Create(
+        ValidLoginChars
+    );
 
     public ValidationError[] Validate(string value, string identity)
     {
@@ -22,17 +24,17 @@ public class AuthenticationValidator : IAuthenticationValidator
             {
                 if (value.Length > 255)
                 {
-                    return [new PropertyMaxSizeValidationError("Login", (ulong)value.Length, 255),];
+                    return [new PropertyMaxSizeValidationError("Login", (ulong)value.Length, 255)];
                 }
 
                 if (value.IsNullOrWhiteSpace())
                 {
-                    return [new PropertyEmptyValidationError("Login"),];
+                    return [new PropertyEmptyValidationError("Login")];
                 }
 
                 if (value.Length < 3)
                 {
-                    return [new PropertyMinSizeValidationError("Login", (ulong)value.Length, 3),];
+                    return [new PropertyMinSizeValidationError("Login", (ulong)value.Length, 3)];
                 }
 
                 var index = value.IndexOfAnyExcept(ValidLoginValues);
@@ -41,8 +43,11 @@ public class AuthenticationValidator : IAuthenticationValidator
                 {
                     return
                     [
-                        new PropertyContainsInvalidValueValidationError<char>("Login", value[index],
-                            ValidLoginChars.ToCharArray()),
+                        new PropertyContainsInvalidValueValidationError<char>(
+                            "Login",
+                            value[index],
+                            ValidLoginChars.ToCharArray()
+                        ),
                     ];
                 }
 
@@ -52,17 +57,20 @@ public class AuthenticationValidator : IAuthenticationValidator
             {
                 if (value.Length > 512)
                 {
-                    return [new PropertyMaxSizeValidationError("Password", (ulong)value.Length, 512),];
+                    return
+                    [
+                        new PropertyMaxSizeValidationError("Password", (ulong)value.Length, 512),
+                    ];
                 }
 
                 if (value.IsNullOrWhiteSpace())
                 {
-                    return [new PropertyEmptyValidationError("Password"),];
+                    return [new PropertyEmptyValidationError("Password")];
                 }
 
                 if (value.Length < 8)
                 {
-                    return [new PropertyMinSizeValidationError("Password", (ulong)value.Length, 5),];
+                    return [new PropertyMinSizeValidationError("Password", (ulong)value.Length, 5)];
                 }
 
                 return [];
@@ -71,27 +79,28 @@ public class AuthenticationValidator : IAuthenticationValidator
             {
                 if (value.Length > 255)
                 {
-                    return [new PropertyMaxSizeValidationError("Email", (ulong)value.Length, 255),];
+                    return [new PropertyMaxSizeValidationError("Email", (ulong)value.Length, 255)];
                 }
 
                 if (value.IsNullOrWhiteSpace())
                 {
-                    return [new PropertyEmptyValidationError("Email"),];
+                    return [new PropertyEmptyValidationError("Email")];
                 }
 
                 if (!value.IsEmail())
                 {
-                    return [new PropertyInvalidValidationError("Email"),];
+                    return [new PropertyInvalidValidationError("Email")];
                 }
 
                 if (value.Length < 5)
                 {
-                    return [new PropertyMinSizeValidationError("Email", (ulong)value.Length, 5),];
+                    return [new PropertyMinSizeValidationError("Email", (ulong)value.Length, 5)];
                 }
 
                 return [];
             }
-            default: throw new ArgumentOutOfRangeException(nameof(identity), identity, null);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(identity), identity, null);
         }
     }
 }

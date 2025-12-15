@@ -17,15 +17,16 @@ public class AuthenticationService : IAuthenticationService
     private readonly DbContext _dbContext;
     private readonly ITokenFactory _tokenFactory;
 
-    private readonly IFactory<string, IHashService<string, string>>
-        _hashServiceFactory;
+    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
 
     private readonly IAuthenticationValidator _authenticationValidator;
 
-    public AuthenticationService(DbContext dbContext,
+    public AuthenticationService(
+        DbContext dbContext,
         ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory,
-        IAuthenticationValidator authenticationValidator)
+        IAuthenticationValidator authenticationValidator
+    )
     {
         _dbContext = dbContext;
         _tokenFactory = tokenFactory;
@@ -33,41 +34,50 @@ public class AuthenticationService : IAuthenticationService
         _authenticationValidator = authenticationValidator;
     }
 
-    public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request,
-        CancellationToken ct)
+    public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct)
     {
-        var users =
-            await UserEntity.GetEntitiesAsync(CreateQuery(request), ct);
+        var users = await UserEntity.GetEntitiesAsync(CreateQuery(request), ct);
 
         return CreateResponse(request, users);
     }
 
     public async ValueTask<ManisPostResponse> PostAsync(
-        ManisPostRequest request, CancellationToken ct)
+        ManisPostRequest request,
+        CancellationToken ct
+    )
     {
         var events = _dbContext.Set<EventEntity>();
-        var identities = request.CreateUsers.Select(x => new[]
-        {
-            x.Email,
-            x.Login,
-        }).SelectMany(x => x).ToArray();
+        var identities = request
+            .CreateUsers.Select(x => new[] { x.Email, x.Login })
+            .SelectMany(x => x)
+            .ToArray();
         var result = new ManisPostResponse();
 
-        var ids = events.Where(y => events.GroupBy(x => x.EntityId)
-               .Select(e =>
-                    e.Where(x =>
-                            x.EntityId == e.Key
-                         && (x.EntityProperty == nameof(UserEntity.Login) ||
-                                x.EntityProperty == nameof(UserEntity.Email))
-                         && x.EntityType == nameof(UserEntity))
-                       .Max(x => x.Id))
-               .Contains(y.Id))
-           .Where(x => identities.Contains(x.EntityStringValue))
-           .Select(x => x.EntityId)
-           .Distinct();
+        var ids = events
+            .Where(y =>
+                events
+                    .GroupBy(x => x.EntityId)
+                    .Select(e =>
+                        e.Where(x =>
+                                x.EntityId == e.Key
+                                && (
+                                    x.EntityProperty == nameof(UserEntity.Login)
+                                    || x.EntityProperty == nameof(UserEntity.Email)
+                                )
+                                && x.EntityType == nameof(UserEntity)
+                            )
+                            .Max(x => x.Id)
+                    )
+                    .Contains(y.Id)
+            )
+            .Where(x => identities.Contains(x.EntityStringValue))
+            .Select(x => x.EntityId)
+            .Distinct();
 
         var users = await UserEntity.GetEntitiesAsync(
-            events.Where(x => ids.Contains(x.EntityId)).AsNoTracking(), ct);
+            events.Where(x => ids.Contains(x.EntityId)).AsNoTracking(),
+            ct
+        );
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -79,52 +89,48 @@ public class AuthenticationService : IAuthenticationService
                 continue;
             }
 
-            var userByEmail =
-                users.SingleOrDefault(x => x.Email == createUser.Email);
+            var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
 
             if (userByEmail is not null)
             {
-                result.ValidationErrors.Add(
-                    new AlreadyExistsValidationError(createUser.Email));
+                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
 
                 continue;
             }
 
-            var userByLogin =
-                users.SingleOrDefault(x => x.Login == createUser.Login);
+            var userByLogin = users.SingleOrDefault(x => x.Login == createUser.Login);
 
             if (userByLogin is not null)
             {
-                result.ValidationErrors.Add(
-                    new AlreadyExistsValidationError(createUser.Login));
+                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
 
                 continue;
             }
 
             if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
             {
-                if (!result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error
-                     && error.Identity == createUser.Email))
+                if (
+                    !result.ValidationErrors.Any(x =>
+                        x is DuplicationValidationError error && error.Identity == createUser.Email
+                    )
+                )
                 {
-                    result.ValidationErrors.Add(
-                        new DuplicationValidationError(createUser.Email));
+                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Email));
                 }
-
 
                 continue;
             }
 
             if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
             {
-                if (!result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error
-                     && error.Identity == createUser.Login))
+                if (
+                    !result.ValidationErrors.Any(x =>
+                        x is DuplicationValidationError error && error.Identity == createUser.Login
+                    )
+                )
                 {
-                    result.ValidationErrors.Add(
-                        new DuplicationValidationError(createUser.Login));
+                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Login));
                 }
-
 
                 continue;
             }
@@ -132,20 +138,24 @@ public class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            await UserEntity.AddEntitiesAsync(_dbContext, id.ToString(), ct,
-            [
-                new()
-                {
-                    Login = createUser.Login,
-                    Email = createUser.Email,
-                    PasswordSalt = salt,
-                    PasswordHash = _hashServiceFactory
-                       .Create(NameHelper.Utf8Sha512Hex)
-                       .ComputeHash($"{salt};{createUser.Password}"),
-                    PasswordHashMethod = NameHelper.Utf8Sha512Hex,
-                    Id = id,
-                },
-            ]);
+            await UserEntity.AddEntitiesAsync(
+                _dbContext,
+                id.ToString(),
+                ct,
+                [
+                    new()
+                    {
+                        Login = createUser.Login,
+                        Email = createUser.Email,
+                        PasswordSalt = salt,
+                        PasswordHash = _hashServiceFactory
+                            .Create(NameHelper.Utf8Sha512Hex)
+                            .ComputeHash($"{salt};{createUser.Password}"),
+                        PasswordHashMethod = NameHelper.Utf8Sha512Hex,
+                        Id = id,
+                    },
+                ]
+            );
         }
 
         await _dbContext.SaveChangesAsync(ct);
@@ -156,28 +166,36 @@ public class AuthenticationService : IAuthenticationService
     public ManisPostResponse Post(ManisPostRequest request)
     {
         var events = _dbContext.Set<EventEntity>();
-        var identities = request.CreateUsers.Select(x => new[]
-        {
-            x.Email,
-            x.Login,
-        }).SelectMany(x => x).ToArray();
+        var identities = request
+            .CreateUsers.Select(x => new[] { x.Email, x.Login })
+            .SelectMany(x => x)
+            .ToArray();
         var result = new ManisPostResponse();
 
-        var ids = events.Where(y => events.GroupBy(x => x.EntityId)
-               .Select(e =>
-                    e.Where(x =>
-                            x.EntityId == e.Key
-                         && (x.EntityProperty == nameof(UserEntity.Login) ||
-                                x.EntityProperty == nameof(UserEntity.Email))
-                         && x.EntityType == nameof(UserEntity))
-                       .Max(x => x.Id))
-               .Contains(y.Id))
-           .Where(x => identities.Contains(x.EntityStringValue))
-           .Select(x => x.EntityId)
-           .Distinct();
+        var ids = events
+            .Where(y =>
+                events
+                    .GroupBy(x => x.EntityId)
+                    .Select(e =>
+                        e.Where(x =>
+                                x.EntityId == e.Key
+                                && (
+                                    x.EntityProperty == nameof(UserEntity.Login)
+                                    || x.EntityProperty == nameof(UserEntity.Email)
+                                )
+                                && x.EntityType == nameof(UserEntity)
+                            )
+                            .Max(x => x.Id)
+                    )
+                    .Contains(y.Id)
+            )
+            .Where(x => identities.Contains(x.EntityStringValue))
+            .Select(x => x.EntityId)
+            .Distinct();
 
-        var users = UserEntity.GetEntities(events
-           .Where(x => ids.Contains(x.EntityId)).AsNoTracking());
+        var users = UserEntity.GetEntities(
+            events.Where(x => ids.Contains(x.EntityId)).AsNoTracking()
+        );
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -189,52 +207,48 @@ public class AuthenticationService : IAuthenticationService
                 continue;
             }
 
-            var userByEmail =
-                users.SingleOrDefault(x => x.Email == createUser.Email);
+            var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
 
             if (userByEmail is not null)
             {
-                result.ValidationErrors.Add(
-                    new AlreadyExistsValidationError(createUser.Email));
+                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
 
                 continue;
             }
 
-            var userByLogin =
-                users.SingleOrDefault(x => x.Login == createUser.Login);
+            var userByLogin = users.SingleOrDefault(x => x.Login == createUser.Login);
 
             if (userByLogin is not null)
             {
-                result.ValidationErrors.Add(
-                    new AlreadyExistsValidationError(createUser.Login));
+                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
 
                 continue;
             }
 
             if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
             {
-                if (!result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error
-                     && error.Identity == createUser.Email))
+                if (
+                    !result.ValidationErrors.Any(x =>
+                        x is DuplicationValidationError error && error.Identity == createUser.Email
+                    )
+                )
                 {
-                    result.ValidationErrors.Add(
-                        new DuplicationValidationError(createUser.Email));
+                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Email));
                 }
-
 
                 continue;
             }
 
             if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
             {
-                if (!result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error
-                     && error.Identity == createUser.Login))
+                if (
+                    !result.ValidationErrors.Any(x =>
+                        x is DuplicationValidationError error && error.Identity == createUser.Login
+                    )
+                )
                 {
-                    result.ValidationErrors.Add(
-                        new DuplicationValidationError(createUser.Login));
+                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Login));
                 }
-
 
                 continue;
             }
@@ -242,19 +256,23 @@ public class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            UserEntity.AddEntities(_dbContext, id.ToString(), [
-                new()
-                {
-                    Login = createUser.Login,
-                    Email = createUser.Email,
-                    PasswordSalt = salt,
-                    PasswordHash = _hashServiceFactory
-                       .Create(NameHelper.Utf8Sha512Hex)
-                       .ComputeHash($"{salt};{createUser.Password}"),
-                    PasswordHashMethod = NameHelper.Utf8Sha512Hex,
-                    Id = id,
-                },
-            ]);
+            UserEntity.AddEntities(
+                _dbContext,
+                id.ToString(),
+                [
+                    new()
+                    {
+                        Login = createUser.Login,
+                        Email = createUser.Email,
+                        PasswordSalt = salt,
+                        PasswordHash = _hashServiceFactory
+                            .Create(NameHelper.Utf8Sha512Hex)
+                            .ComputeHash($"{salt};{createUser.Password}"),
+                        PasswordHashMethod = NameHelper.Utf8Sha512Hex,
+                        Id = id,
+                    },
+                ]
+            );
         }
 
         _dbContext.SaveChanges();
@@ -272,12 +290,15 @@ public class AuthenticationService : IAuthenticationService
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
     {
         var result = new List<ValidationError>();
-        result.AddRange(_authenticationValidator.Validate(createUser.Email,
-            nameof(createUser.Email)));
-        result.AddRange(_authenticationValidator.Validate(createUser.Login,
-            nameof(createUser.Login)));
-        result.AddRange(_authenticationValidator.Validate(createUser.Password,
-            nameof(createUser.Password)));
+        result.AddRange(
+            _authenticationValidator.Validate(createUser.Email, nameof(createUser.Email))
+        );
+        result.AddRange(
+            _authenticationValidator.Validate(createUser.Login, nameof(createUser.Login))
+        );
+        result.AddRange(
+            _authenticationValidator.Validate(createUser.Password, nameof(createUser.Password))
+        );
 
         return result.ToArray();
     }
@@ -287,55 +308,56 @@ public class AuthenticationService : IAuthenticationService
         var events = _dbContext.Set<EventEntity>();
         var identities = request.SignIns.Select(x => x.Key).ToArray();
         var ids = events
-           .GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
-           .Where(x => identities.Contains(x.EntityStringValue))
-           .Select(x => x.EntityId)
-           .Distinct()
-           .Concat(events
-               .GetProperty(nameof(UserEntity), nameof(UserEntity.Login))
-               .Where(x => identities.Contains(x.EntityStringValue))
-               .Select(x => x.EntityId)
-               .Distinct());
+            .GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
+            .Where(x => identities.Contains(x.EntityStringValue))
+            .Select(x => x.EntityId)
+            .Distinct()
+            .Concat(
+                events
+                    .GetProperty(nameof(UserEntity), nameof(UserEntity.Login))
+                    .Where(x => identities.Contains(x.EntityStringValue))
+                    .Select(x => x.EntityId)
+                    .Distinct()
+            );
 
         return events.Where(x => ids.Contains(x.EntityId));
     }
 
-    private ManisGetResponse CreateResponse(ManisGetRequest request,
-        UserEntity[] users)
+    private ManisGetResponse CreateResponse(ManisGetRequest request, UserEntity[] users)
     {
         var result = new ManisGetResponse();
 
         foreach (var (identity, password) in request.SignIns)
         {
-            var user = users.SingleOrDefault(x =>
-                x.Login == identity || x.Email == identity);
+            var user = users.SingleOrDefault(x => x.Login == identity || x.Email == identity);
 
             if (user is null)
             {
-                result.ValidationErrors.Add(
-                    new NotFoundValidationError(identity));
+                result.ValidationErrors.Add(new NotFoundValidationError(identity));
 
                 continue;
             }
 
-            var hashService =
-                _hashServiceFactory.Create(user.PasswordHashMethod);
+            var hashService = _hashServiceFactory.Create(user.PasswordHashMethod);
 
-            if (hashService.ComputeHash($"{user.PasswordSalt};{password}")
-             == user.PasswordHash)
+            if (hashService.ComputeHash($"{user.PasswordSalt};{password}") == user.PasswordHash)
             {
-                result.SignIns.Add(user.Login, _tokenFactory.Create(new()
-                {
-                    Email = user.Email,
-                    Login = user.Login,
-                    Id = user.Id,
-                    Role = Role.User,
-                }));
+                result.SignIns.Add(
+                    user.Login,
+                    _tokenFactory.Create(
+                        new()
+                        {
+                            Email = user.Email,
+                            Login = user.Login,
+                            Id = user.Id,
+                            Role = Role.User,
+                        }
+                    )
+                );
             }
             else
             {
-                result.ValidationErrors.Add(
-                    new InvalidPasswordValidationError(identity));
+                result.ValidationErrors.Add(new InvalidPasswordValidationError(identity));
             }
         }
 

@@ -18,7 +18,7 @@ public partial class ManisJsonContext : JsonSerializerContext
     public static readonly IJsonTypeInfoResolver Resolver;
 
     static ManisJsonContext()
-    { 
+    {
         Resolver = Default.WithAddedModifier(typeInfo =>
         {
             if (typeInfo.Type == typeof(ValidationError))
@@ -28,9 +28,18 @@ public partial class ManisJsonContext : JsonSerializerContext
                     TypeDiscriminatorPropertyName = "$type",
                     DerivedTypes =
                     {
-                        new(typeof(AlreadyExistsValidationError), typeof(AlreadyExistsValidationError).FullName!),
-                        new(typeof(NotFoundValidationError), typeof(NotFoundValidationError).FullName!),
-                        new(typeof(InvalidPasswordValidationError), typeof(InvalidPasswordValidationError).FullName!),
+                        new(
+                            typeof(AlreadyExistsValidationError),
+                            typeof(AlreadyExistsValidationError).FullName!
+                        ),
+                        new(
+                            typeof(NotFoundValidationError),
+                            typeof(NotFoundValidationError).FullName!
+                        ),
+                        new(
+                            typeof(InvalidPasswordValidationError),
+                            typeof(InvalidPasswordValidationError).FullName!
+                        ),
                     },
                 };
             }

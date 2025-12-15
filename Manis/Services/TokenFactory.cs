@@ -16,7 +16,10 @@ public class JwtTokenFactory : ITokenFactory
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly JwtTokenFactoryOptions _options;
 
-    public JwtTokenFactory(JwtTokenFactoryOptions options, JwtSecurityTokenHandler jwtSecurityTokenHandler)
+    public JwtTokenFactory(
+        JwtTokenFactoryOptions options,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler
+    )
     {
         _options = options;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
@@ -25,7 +28,10 @@ public class JwtTokenFactory : ITokenFactory
     public TokenResult Create(UserTokenClaims user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
-        var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+        var signingCredentials = new SigningCredentials(
+            key,
+            SecurityAlgorithms.HmacSha512Signature
+        );
 
         var jwt = CreateToken(
             signingCredentials,
@@ -33,56 +39,48 @@ public class JwtTokenFactory : ITokenFactory
                 new(ClaimTypes.Name, user.Login),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Role, user.Role.ToString()),
-                new(ClaimTypes.Email, user.Email)
+                new(ClaimTypes.Email, user.Email),
             ],
             DateTime.UtcNow.AddDays(_options.ExpiresDays)
         );
 
         var refreshJwt = CreateToken(
             signingCredentials,
-            [
-                new(ClaimTypes.Name, user.Login)
-            ],
+            [new(ClaimTypes.Name, user.Login)],
             DateTime.UtcNow.AddDays(_options.RefreshExpiresDays)
         );
 
-        return new()
-        {
-            RefreshToken = refreshJwt,
-            Token = jwt
-        };
+        return new() { RefreshToken = refreshJwt, Token = jwt };
     }
 
     public TokenResult Create()
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
-        var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+        var signingCredentials = new SigningCredentials(
+            key,
+            SecurityAlgorithms.HmacSha512Signature
+        );
 
         var jwt = CreateToken(
             signingCredentials,
-            [
-                new(ClaimTypes.Role, nameof(Role.Service))
-            ],
+            [new(ClaimTypes.Role, nameof(Role.Service))],
             DateTime.UtcNow.AddDays(_options.ExpiresDays)
         );
 
         var refreshJwt = CreateToken(
             signingCredentials,
-            new()
-            {
-                new(ClaimTypes.Role, nameof(Role.Service)),
-            },
+            new() { new(ClaimTypes.Role, nameof(Role.Service)) },
             DateTime.UtcNow.AddDays(_options.RefreshExpiresDays)
         );
 
-        return new()
-        {
-            RefreshToken = refreshJwt,
-            Token = jwt
-        };
+        return new() { RefreshToken = refreshJwt, Token = jwt };
     }
 
-    private string CreateToken(SigningCredentials signingCredentials, List<Claim> claims, DateTime expires)
+    private string CreateToken(
+        SigningCredentials signingCredentials,
+        List<Claim> claims,
+        DateTime expires
+    )
     {
         var token = new JwtSecurityToken(
             _options.Issuer,

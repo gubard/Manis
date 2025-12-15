@@ -3,4 +3,5 @@ using Manis.Contract.Models;
 
 namespace Manis.Contract.Services;
 
-public interface IAuthenticationService : IService<ManisGetRequest, ManisPostRequest, ManisGetResponse, ManisPostResponse>;
+public interface IAuthenticationService
+    : IService<ManisGetRequest, ManisPostRequest, ManisGetResponse, ManisPostResponse>;
