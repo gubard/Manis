@@ -141,7 +141,6 @@ public class AuthenticationService : IAuthenticationService
             await UserEntity.AddEntitiesAsync(
                 _dbContext,
                 id.ToString(),
-                ct,
                 [
                     new()
                     {
@@ -154,7 +153,8 @@ public class AuthenticationService : IAuthenticationService
                         PasswordHashMethod = NameHelper.Utf8Sha512Hex,
                         Id = id,
                     },
-                ]
+                ],
+                ct
             );
         }
 
