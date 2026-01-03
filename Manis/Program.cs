@@ -8,7 +8,9 @@ using Manis.Contract.Services;
 using Manis.Models;
 using Manis.Services;
 using Microsoft.EntityFrameworkCore;
+using Nestor.Db.Services;
 using Nestor.Db.Sqlite;
+using Nestor.Db.Sqlite.Helpers;
 using Zeus.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +21,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
+builder.Services.AddTransient<IMigrator>(_ => new Migrator(SqliteMigration.Migrations));
 builder.Services.AddTransient<JwtSecurityTokenHandler>();
 builder.Services.AddTransient<SHA512>(_ => SHA512.Create());
 builder.Services.AddTransient<Sha512HashService>();
@@ -50,8 +53,7 @@ builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
 builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>(
     (sp, options) =>
         options.UseSqlite(
-            $"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}",
-            x => x.MigrationsAssembly(typeof(SqliteNestorDbContext).Assembly)
+            $"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}"
         )
 );
 var app = builder.Build();
@@ -83,5 +85,5 @@ app.MapPost(
     .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
-await app.Services.MigrateDbAsync("manis.migration", CancellationToken.None);
+await app.Services.MigrateDbAsync(CancellationToken.None);
 await app.RunAsync(CancellationToken.None);
