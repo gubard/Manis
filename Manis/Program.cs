@@ -40,9 +40,11 @@ builder.Services.AddTransient<Sha512HashService>();
 builder.Services.AddTransient<StringToUtf8>();
 builder.Services.AddTransient<BytesToHex>();
 builder.Services.AddTransient<IStorageService>(_ => new StorageService("Manis"));
+
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolver = ManisJsonContext.Resolver
 );
+
 builder.Services.AddTransient<IFactory<string, IHashService<string, string>>>(sp =>
 {
     var dic = new Dictionary<string, IHashService<string, string>>
@@ -59,20 +61,25 @@ builder.Services.AddTransient<IFactory<string, IHashService<string, string>>>(sp
 
     return new HashServiceFactory(dic.ToFrozenDictionary());
 });
+
 builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
     sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt")
 );
-builder.Services.AddDbContext<DbContext, ManisDbContext>(
+
+builder.Services.AddDbContext<NestorDbContext, ManisDbContext>(
     (sp, options) =>
         options.UseSqlite(
             $"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}"
         )
 );
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+}
 
 app.UseHttpsRedirection();
 

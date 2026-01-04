@@ -8,13 +8,14 @@ using Manis.Models;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Helpers;
 using Nestor.Db.Models;
+using Nestor.Db.Services;
 using Zeus.Models;
 
 namespace Manis.Services;
 
 public class AuthenticationService : IAuthenticationService
 {
-    private readonly DbContext _dbContext;
+    private readonly NestorDbContext _dbContext;
     private readonly ITokenFactory _tokenFactory;
 
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
@@ -22,7 +23,7 @@ public class AuthenticationService : IAuthenticationService
     private readonly IAuthenticationValidator _authenticationValidator;
 
     public AuthenticationService(
-        DbContext dbContext,
+        NestorDbContext dbContext,
         ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory,
         IAuthenticationValidator authenticationValidator
@@ -46,7 +47,7 @@ public class AuthenticationService : IAuthenticationService
         CancellationToken ct
     )
     {
-        var events = _dbContext.Set<EventEntity>();
+        var events = _dbContext.Events;
         var identities = request
             .CreateUsers.Select(x => new[] { x.Email, x.Login })
             .SelectMany(x => x)
@@ -165,11 +166,13 @@ public class AuthenticationService : IAuthenticationService
 
     public ManisPostResponse Post(ManisPostRequest request)
     {
-        var events = _dbContext.Set<EventEntity>();
+        var events = _dbContext.Events;
+
         var identities = request
             .CreateUsers.Select(x => new[] { x.Email, x.Login })
             .SelectMany(x => x)
             .ToArray();
+
         var result = new ManisPostResponse();
 
         var ids = events
@@ -305,8 +308,9 @@ public class AuthenticationService : IAuthenticationService
 
     private IQueryable<EventEntity> CreateQuery(ManisGetRequest request)
     {
-        var events = _dbContext.Set<EventEntity>();
+        var events = _dbContext.Events;
         var identities = request.SignIns.Select(x => x.Key).ToArray();
+
         var ids = events
             .GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
             .Where(x => identities.Contains(x.EntityStringValue))

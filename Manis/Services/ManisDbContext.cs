@@ -6,7 +6,9 @@ using Nestor.Db.Services;
 
 namespace Manis.Services;
 
-public sealed class ManisDbContext : NestorDbContext, IStaticFactory<DbContextOptions, DbContext>
+public sealed class ManisDbContext
+    : NestorDbContext,
+        IStaticFactory<DbContextOptions, NestorDbContext>
 {
     public ManisDbContext() { }
 
@@ -27,7 +29,7 @@ public sealed class ManisDbContext : NestorDbContext, IStaticFactory<DbContextOp
         modelBuilder.ApplyConfiguration(new UserEntityTypeConfiguration());
     }
 
-    public static DbContext Create(DbContextOptions input)
+    public static NestorDbContext Create(DbContextOptions input)
     {
         return new ManisDbContext(input);
     }
