@@ -1,4 +1,5 @@
 ﻿using Gaia.Services;
+using Manis.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Nestor.Db.Services;
@@ -11,6 +12,8 @@ public sealed class ManisDbContext : NestorDbContext, IStaticFactory<DbContextOp
 
     public ManisDbContext(DbContextOptions options)
         : base(options) { }
+
+    public DbSet<UserEntity> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
