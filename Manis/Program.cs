@@ -85,21 +85,21 @@ app.UseHttpsRedirection();
 
 app.MapPost(
         RouteHelper.Get,
-        (
+        async (
             ManisGetRequest request,
             IAuthenticationService authenticationService,
             CancellationToken ct
-        ) => authenticationService.GetAsync(request, ct)
+        ) => await authenticationService.GetAsync(request, ct)
     )
     .WithName(RouteHelper.GetName);
 
 app.MapPost(
         RouteHelper.Post,
-        (
+        async (
             ManisPostRequest request,
             IAuthenticationService authenticationService,
             CancellationToken ct
-        ) => authenticationService.PostAsync(request, ct)
+        ) => await authenticationService.PostAsync(request, ct)
     )
     .WithName(RouteHelper.PostName);
 

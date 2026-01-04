@@ -1,4 +1,5 @@
-﻿using Gaia.Helpers;
+﻿using System.Runtime.CompilerServices;
+using Gaia.Helpers;
 using Gaia.Models;
 using Gaia.Services;
 using Manis.Contract.Errors;
@@ -35,14 +36,30 @@ public class AuthenticationService : IAuthenticationService
         _authenticationValidator = authenticationValidator;
     }
 
-    public async ValueTask<ManisGetResponse> GetAsync(ManisGetRequest request, CancellationToken ct)
+    public ConfiguredValueTaskAwaitable<ManisGetResponse> GetAsync(
+        ManisGetRequest request,
+        CancellationToken ct
+    )
+    {
+        return GetCore(request, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
     {
         var users = await UserEntity.GetEntitiesAsync(CreateQuery(request), ct);
 
         return CreateResponse(request, users);
     }
 
-    public async ValueTask<ManisPostResponse> PostAsync(
+    public ConfiguredValueTaskAwaitable<ManisPostResponse> PostAsync(
+        ManisPostRequest request,
+        CancellationToken ct
+    )
+    {
+        return PostCore(request, ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask<ManisPostResponse> PostCore(
         ManisPostRequest request,
         CancellationToken ct
     )
