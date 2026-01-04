@@ -9,7 +9,6 @@ using Manis.Models;
 using Manis.Services;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Services;
-using Nestor.Db.Sqlite;
 using Nestor.Db.Sqlite.Helpers;
 using Zeus.Helpers;
 
@@ -50,7 +49,7 @@ builder.Services.AddTransient<IFactory<string, IHashService<string, string>>>(sp
 builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
     sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt")
 );
-builder.Services.AddDbContext<DbContext, SqliteNestorDbContext>(
+builder.Services.AddDbContext<DbContext, ManisDbContext>(
     (sp, options) =>
         options.UseSqlite(
             $"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}"
