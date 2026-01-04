@@ -21,7 +21,7 @@ public sealed class ManisDbContext : NestorDbContext, IStaticFactory<DbContextOp
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.ApplyConfiguration(new UserEntityEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new UserEntityTypeConfiguration());
     }
 
     public static DbContext Create(DbContextOptions input)

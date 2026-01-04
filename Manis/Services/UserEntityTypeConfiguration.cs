@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Manis.Services;
 
-public sealed class UserEntityEntityTypeConfiguration : IEntityTypeConfiguration<UserEntity>
+public sealed class UserEntityTypeConfiguration : IEntityTypeConfiguration<UserEntity>
 {
     public void Configure(EntityTypeBuilder<UserEntity> builder)
     {
@@ -13,5 +13,6 @@ public sealed class UserEntityEntityTypeConfiguration : IEntityTypeConfiguration
         builder.Property(e => e.Email).HasMaxLength(255);
         builder.Property(e => e.PasswordHash).HasMaxLength(512);
         builder.Property(e => e.PasswordSalt).HasMaxLength(128);
+        builder.Property(e => e.ActivationCode).HasMaxLength(255);
     }
 }

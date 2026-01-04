@@ -5,12 +5,25 @@ using Gaia.Helpers;
 using Gaia.Services;
 using Manis.Contract.Models;
 using Manis.Contract.Services;
+using Manis.Helpers;
 using Manis.Models;
 using Manis.Services;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Services;
 using Nestor.Db.Sqlite.Helpers;
 using Zeus.Helpers;
+
+var migration = new Dictionary<long, string>();
+
+foreach (var (key, value) in SqliteMigration.Migrations)
+{
+    migration.Add(key, value);
+}
+
+foreach (var (key, value) in ManisMigration.Migrations)
+{
+    migration.Add(key, value);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +33,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
-builder.Services.AddTransient<IMigrator>(_ => new Migrator(SqliteMigration.Migrations));
+builder.Services.AddTransient<IMigrator>(_ => new Migrator(migration.ToFrozenDictionary()));
 builder.Services.AddTransient<JwtSecurityTokenHandler>();
 builder.Services.AddTransient<SHA512>(_ => SHA512.Create());
 builder.Services.AddTransient<Sha512HashService>();
