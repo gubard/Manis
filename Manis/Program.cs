@@ -13,7 +13,7 @@ using Nestor.Db.Services;
 using Nestor.Db.Sqlite.Helpers;
 using Zeus.Helpers;
 
-var migration = new Dictionary<long, string>();
+var migration = new Dictionary<int, string>();
 
 foreach (var (key, value) in SqliteMigration.Migrations)
 {
@@ -68,9 +68,11 @@ builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
 
 builder.Services.AddDbContext<NestorDbContext, ManisDbContext>(
     (sp, options) =>
-        options.UseSqlite(
-            $"Data Source={sp.GetRequiredService<IStorageService>().GetDbDirectory().ToFile("manis.db")}"
-        )
+    {
+        var storageService = sp.GetRequiredService<IStorageService>();
+        var file = storageService.GetDbDirectory().ToFile("manis.db");
+        options.UseSqlite($"Data Source={file}");
+    }
 );
 
 var app = builder.Build();

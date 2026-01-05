@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Manis
+namespace Manis.CompiledModels
 {
     [EntityFrameworkInternal]
     public partial class UserEntityEntityType
@@ -35,7 +35,8 @@ namespace Manis
                 "ActivationCode",
                 typeof(string),
                 propertyInfo: typeof(UserEntity).GetProperty("ActivationCode", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                fieldInfo: typeof(UserEntity).GetField("<ActivationCode>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+                fieldInfo: typeof(UserEntity).GetField("<ActivationCode>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                maxLength: 255);
 
             var email = runtimeEntityType.AddProperty(
                 "Email",
@@ -90,7 +91,7 @@ namespace Manis
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);
-            runtimeEntityType.AddAnnotation("Relational:TableName", "UserEntity");
+            runtimeEntityType.AddAnnotation("Relational:TableName", "Users");
             runtimeEntityType.AddAnnotation("Relational:ViewName", null);
             runtimeEntityType.AddAnnotation("Relational:ViewSchema", null);
 

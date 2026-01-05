@@ -4,16 +4,16 @@ namespace Manis.Helpers;
 
 public static class ManisMigration
 {
-    public static readonly FrozenDictionary<long, string> Migrations;
+    public static readonly FrozenDictionary<int, string> Migrations;
 
     static ManisMigration()
     {
-        Migrations = new Dictionary<long, string>
+        Migrations = new Dictionary<int, string>
         {
             {
-                202601041215,
+                3,
                 @"
-CREATE TABLE IF NOT EXISTS UserEntities (
+CREATE TABLE IF NOT EXISTS Users (
     Id TEXT PRIMARY KEY NOT NULL,
     Login TEXT NOT NULL CHECK(length(Login) <= 255),
     Email TEXT NOT NULL CHECK(length(Email) <= 255),

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Manis
+namespace Manis.CompiledModels
 {
     [DbContext(typeof(ManisDbContext))]
     public partial class ManisDbContextModel : RuntimeModel

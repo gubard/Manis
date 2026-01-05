@@ -1,4 +1,5 @@
 ﻿using Gaia.Services;
+using Manis.CompiledModels;
 using Manis.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

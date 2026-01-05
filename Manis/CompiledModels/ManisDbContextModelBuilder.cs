@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore.Metadata;
 #pragma warning disable 219, 612, 618
 #nullable disable
 
-namespace Manis
+namespace Manis.CompiledModels
 {
     public partial class ManisDbContextModel
     {
         private ManisDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("2ae0753d-d55b-43ad-8c66-9d4f8d8a1c32"), entityTypeCount: 3)
+            : base(skipDetectChanges: false, modelId: new Guid("80e9014f-fa9b-434f-acd2-f640632e77a9"), entityTypeCount: 3)
         {
         }
 
