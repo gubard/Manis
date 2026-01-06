@@ -11,6 +11,7 @@ using Manis.Services;
 using Microsoft.EntityFrameworkCore;
 using Nestor.Db.Services;
 using Nestor.Db.Sqlite.Helpers;
+using Nestor.Db.Sqlite.Services;
 using Zeus.Helpers;
 
 var migration = new Dictionary<int, string>();
