@@ -24,6 +24,12 @@ public sealed class ManisDbContext
         optionsBuilder.UseModel(ManisDbContextModel.Instance);
     }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfiguration(new UserEntityTypeConfiguration());
+    }
+
     public static NestorDbContext Create(DbContextOptions input)
     {
         return new ManisDbContext(input);
