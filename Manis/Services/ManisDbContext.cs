@@ -7,9 +7,15 @@ using Nestor.Db.Services;
 
 namespace Manis.Services;
 
+public interface IAuthenticationDbContext : INestorDbContext
+{
+    DbSet<UserEntity> Users { get; }
+}
+
 public sealed class ManisDbContext
     : NestorDbContext,
-        IStaticFactory<DbContextOptions, NestorDbContext>
+        IStaticFactory<DbContextOptions, NestorDbContext>,
+        IAuthenticationDbContext
 {
     public ManisDbContext() { }
 

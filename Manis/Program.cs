@@ -9,7 +9,6 @@ using Manis.Helpers;
 using Manis.Models;
 using Manis.Services;
 using Microsoft.EntityFrameworkCore;
-using Nestor.Db.Services;
 using Nestor.Db.Sqlite.Helpers;
 using Nestor.Db.Sqlite.Services;
 using Zeus.Helpers;
@@ -31,6 +30,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
@@ -67,7 +67,7 @@ builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
     sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt")
 );
 
-builder.Services.AddDbContext<NestorDbContext, ManisDbContext>(
+builder.Services.AddDbContext<ManisDbContext>(
     (sp, options) =>
     {
         var storageService = sp.GetRequiredService<IStorageService>();
@@ -101,11 +101,17 @@ app.MapPost(
         async (
             ManisPostRequest request,
             IAuthenticationService authenticationService,
+            IHttpContextAccessor accessor,
             CancellationToken ct
-        ) => await authenticationService.PostAsync(request, ct)
+        ) =>
+            await authenticationService.PostAsync(
+                accessor.HttpContext.ThrowIfNull().GetIdempotentId(),
+                request,
+                ct
+            )
     )
     .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
-await app.Services.MigrateDbAsync(CancellationToken.None);
+await app.Services.MigrateDbAsync<ManisDbContext>(CancellationToken.None);
 await app.RunAsync(CancellationToken.None);

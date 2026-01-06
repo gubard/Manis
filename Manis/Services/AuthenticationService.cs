@@ -7,24 +7,19 @@ using Manis.Contract.Models;
 using Manis.Contract.Services;
 using Manis.Models;
 using Microsoft.EntityFrameworkCore;
-using Nestor.Db.Helpers;
-using Nestor.Db.Models;
-using Nestor.Db.Services;
 using Zeus.Models;
 
 namespace Manis.Services;
 
 public class AuthenticationService : IAuthenticationService
 {
-    private readonly NestorDbContext _dbContext;
+    private readonly ManisDbContext _dbContext;
     private readonly ITokenFactory _tokenFactory;
-
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
-
     private readonly IAuthenticationValidator _authenticationValidator;
 
     public AuthenticationService(
-        NestorDbContext dbContext,
+        ManisDbContext dbContext,
         ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory,
         IAuthenticationValidator authenticationValidator
@@ -46,56 +41,33 @@ public class AuthenticationService : IAuthenticationService
 
     private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
     {
-        var users = await UserEntity.GetEntitiesAsync(CreateQuery(request), ct);
+        var users = await CreateQuery(request).ToArrayAsync(ct);
 
         return CreateResponse(request, users);
     }
 
     public ConfiguredValueTaskAwaitable<ManisPostResponse> PostAsync(
+        Guid idempotentId,
         ManisPostRequest request,
         CancellationToken ct
     )
     {
-        return PostCore(request, ct).ConfigureAwait(false);
+        return PostCore(idempotentId, request, ct).ConfigureAwait(false);
     }
 
     private async ValueTask<ManisPostResponse> PostCore(
+        Guid idempotentId,
         ManisPostRequest request,
         CancellationToken ct
     )
     {
-        var events = _dbContext.Events;
-        var identities = request
-            .CreateUsers.Select(x => new[] { x.Email, x.Login })
-            .SelectMany(x => x)
-            .ToArray();
         var result = new ManisPostResponse();
+        var emails = request.CreateUsers.Select(x => x.Email).ToArray();
+        var login = request.CreateUsers.Select(x => x.Login).ToArray();
 
-        var ids = events
-            .Where(y =>
-                events
-                    .GroupBy(x => x.EntityId)
-                    .Select(e =>
-                        e.Where(x =>
-                                x.EntityId == e.Key
-                                && (
-                                    x.EntityProperty == nameof(UserEntity.Login)
-                                    || x.EntityProperty == nameof(UserEntity.Email)
-                                )
-                                && x.EntityType == nameof(UserEntity)
-                            )
-                            .Max(x => x.Id)
-                    )
-                    .Contains(y.Id)
-            )
-            .Where(x => identities.Contains(x.EntityStringValue))
-            .Select(x => x.EntityId)
-            .Distinct();
-
-        var users = await UserEntity.GetEntitiesAsync(
-            events.Where(x => ids.Contains(x.EntityId)).AsNoTracking(),
-            ct
-        );
+        var users = await _dbContext
+            .Users.Where(x => emails.Contains(x.Email) || login.Contains(x.Login))
+            .ToArrayAsync(ct);
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -159,6 +131,7 @@ public class AuthenticationService : IAuthenticationService
             await UserEntity.AddEntitiesAsync(
                 _dbContext,
                 id.ToString(),
+                idempotentId,
                 [
                     new()
                     {
@@ -181,41 +154,15 @@ public class AuthenticationService : IAuthenticationService
         return result;
     }
 
-    public ManisPostResponse Post(ManisPostRequest request)
+    public ManisPostResponse Post(Guid idempotentId, ManisPostRequest request)
     {
-        var events = _dbContext.Events;
-
-        var identities = request
-            .CreateUsers.Select(x => new[] { x.Email, x.Login })
-            .SelectMany(x => x)
-            .ToArray();
-
         var result = new ManisPostResponse();
+        var emails = request.CreateUsers.Select(x => x.Email).ToArray();
+        var login = request.CreateUsers.Select(x => x.Login).ToArray();
 
-        var ids = events
-            .Where(y =>
-                events
-                    .GroupBy(x => x.EntityId)
-                    .Select(e =>
-                        e.Where(x =>
-                                x.EntityId == e.Key
-                                && (
-                                    x.EntityProperty == nameof(UserEntity.Login)
-                                    || x.EntityProperty == nameof(UserEntity.Email)
-                                )
-                                && x.EntityType == nameof(UserEntity)
-                            )
-                            .Max(x => x.Id)
-                    )
-                    .Contains(y.Id)
-            )
-            .Where(x => identities.Contains(x.EntityStringValue))
-            .Select(x => x.EntityId)
-            .Distinct();
-
-        var users = UserEntity.GetEntities(
-            events.Where(x => ids.Contains(x.EntityId)).AsNoTracking()
-        );
+        var users = _dbContext
+            .Users.Where(x => emails.Contains(x.Email) || login.Contains(x.Login))
+            .ToArray();
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -279,6 +226,7 @@ public class AuthenticationService : IAuthenticationService
             UserEntity.AddEntities(
                 _dbContext,
                 id.ToString(),
+                idempotentId,
                 [
                     new()
                     {
@@ -302,7 +250,7 @@ public class AuthenticationService : IAuthenticationService
 
     public ManisGetResponse Get(ManisGetRequest request)
     {
-        var users = UserEntity.GetEntities(CreateQuery(request));
+        var users = CreateQuery(request).ToArray();
 
         return CreateResponse(request, users);
     }
@@ -323,25 +271,13 @@ public class AuthenticationService : IAuthenticationService
         return result.ToArray();
     }
 
-    private IQueryable<EventEntity> CreateQuery(ManisGetRequest request)
+    private IQueryable<UserEntity> CreateQuery(ManisGetRequest request)
     {
-        var events = _dbContext.Events;
         var identities = request.SignIns.Select(x => x.Key).ToArray();
 
-        var ids = events
-            .GetProperty(nameof(UserEntity), nameof(UserEntity.Email))
-            .Where(x => identities.Contains(x.EntityStringValue))
-            .Select(x => x.EntityId)
-            .Distinct()
-            .Concat(
-                events
-                    .GetProperty(nameof(UserEntity), nameof(UserEntity.Login))
-                    .Where(x => identities.Contains(x.EntityStringValue))
-                    .Select(x => x.EntityId)
-                    .Distinct()
-            );
-
-        return events.Where(x => ids.Contains(x.EntityId));
+        return _dbContext.Users.Where(x =>
+            identities.Contains(x.Login) || identities.Contains(x.Email)
+        );
     }
 
     private ManisGetResponse CreateResponse(ManisGetRequest request, UserEntity[] users)

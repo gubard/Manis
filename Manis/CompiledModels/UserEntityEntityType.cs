@@ -253,7 +253,8 @@ namespace Manis.CompiledModels
                 "PasswordHashMethod",
                 typeof(string),
                 propertyInfo: typeof(UserEntity).GetProperty("PasswordHashMethod", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                fieldInfo: typeof(UserEntity).GetField("<PasswordHashMethod>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+                fieldInfo: typeof(UserEntity).GetField("<PasswordHashMethod>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                maxLength: 255);
             passwordHashMethod.SetGetter(
                 string (UserEntity instance) => UserEntityUnsafeAccessors.PasswordHashMethod(instance),
                 bool (UserEntity instance) => UserEntityUnsafeAccessors.PasswordHashMethod(instance) == null);
