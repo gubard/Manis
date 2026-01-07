@@ -15,7 +15,7 @@ namespace Manis.CompiledModels
     public partial class ManisDbContextModel
     {
         private ManisDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("e0e9d1ec-57bc-407b-a359-b35d4af5f056"), entityTypeCount: 3)
+            : base(skipDetectChanges: false, modelId: new Guid("67b2318e-a6c4-4b4b-87af-fe9159d8c982"), entityTypeCount: 3)
         {
         }
 
