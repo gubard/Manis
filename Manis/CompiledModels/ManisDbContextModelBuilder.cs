@@ -15,7 +15,7 @@ namespace Manis.CompiledModels
     public partial class ManisDbContextModel
     {
         private ManisDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("4f7bb1ac-ffbe-434e-8ec2-ea18e64cb6a0"), entityTypeCount: 3)
+            : base(skipDetectChanges: false, modelId: new Guid("8b6692e3-872a-483f-ba83-66fa6a98ace6"), entityTypeCount: 3)
         {
         }
 
@@ -285,7 +285,7 @@ namespace Manis.CompiledModels
             idColumn0.Accessors = ColumnAccessorsFactory.CreateGeneric<long>(idColumn0);
             var createdAtColumn = new Column("CreatedAt", "TEXT", eventsTable);
             eventsTable.Columns.Add("CreatedAt", createdAtColumn);
-            createdAtColumn.Accessors = ColumnAccessorsFactory.CreateGeneric<DateTime>(createdAtColumn);
+            createdAtColumn.Accessors = ColumnAccessorsFactory.CreateGeneric<DateTimeOffset>(createdAtColumn);
             var entityBooleanValueColumn = new Column("EntityBooleanValue", "INTEGER", eventsTable)
             {
                 IsNullable = true
