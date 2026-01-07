@@ -10,7 +10,7 @@ public sealed class UserEntityTypeConfiguration : IEntityTypeConfiguration<UserE
     public void Configure(EntityTypeBuilder<UserEntity> builder)
     {
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Id).ValueGeneratedNever().SetComparerStruct();
+        builder.Property(e => e.Id).SetComparerStruct();
         builder.Property(e => e.Login).HasMaxLength(255).SetComparerClass();
         builder.Property(e => e.Email).HasMaxLength(255).SetComparerClass();
         builder.Property(e => e.PasswordHashMethod).HasMaxLength(255).SetComparerClass();

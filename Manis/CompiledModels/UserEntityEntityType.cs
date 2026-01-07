@@ -33,6 +33,7 @@ namespace Manis.CompiledModels
                 typeof(Guid),
                 propertyInfo: typeof(UserEntity).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(UserEntity).GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
             id.SetGetter(
@@ -51,7 +52,7 @@ namespace Manis.CompiledModels
                     return instance;
                 });
             id.SetAccessors(
-                Guid (IInternalEntry entry) => UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))),
+                Guid (IInternalEntry entry) => (entry.FlaggedAsStoreGenerated(0) ? entry.ReadStoreGeneratedValue<Guid>(0) : (entry.FlaggedAsTemporary(0) && ((object)UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity)))).Equals(((object)(new Guid("00000000-0000-0000-0000-000000000000")))) ? entry.ReadTemporaryValue<Guid>(0) : UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))))),
                 Guid (IInternalEntry entry) => UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))),
                 Guid (IInternalEntry entry) => entry.ReadOriginalValue<Guid>(id, 0),
                 Guid (IInternalEntry entry) => ((InternalEntityEntry)(entry)).ReadRelationshipSnapshotValue<Guid>(id, 0));
@@ -60,7 +61,7 @@ namespace Manis.CompiledModels
                 originalValueIndex: 0,
                 shadowIndex: -1,
                 relationshipIndex: 0,
-                storeGenerationIndex: -1);
+                storeGenerationIndex: 0);
             id.TypeMapping = SqliteGuidTypeMapping.Default;
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<Guid>(id));
             id.SetComparer(new ValueComparer<Guid>(
@@ -375,9 +376,9 @@ namespace Manis.CompiledModels
                     return ((ISnapshot)(new Snapshot<Guid, string, string, bool, string, string, string, string>(((ValueComparer<Guid>)(((IProperty)id).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid>(id)), (source.GetCurrentValue<string>(activationCode) == null ? null : ((ValueComparer<string>)(((IProperty)activationCode).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(activationCode))), (source.GetCurrentValue<string>(email) == null ? null : ((ValueComparer<string>)(((IProperty)email).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(email))), ((ValueComparer<bool>)(((IProperty)isActivated).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isActivated)), (source.GetCurrentValue<string>(login) == null ? null : ((ValueComparer<string>)(((IProperty)login).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(login))), (source.GetCurrentValue<string>(passwordHash) == null ? null : ((ValueComparer<string>)(((IProperty)passwordHash).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(passwordHash))), (source.GetCurrentValue<string>(passwordHashMethod) == null ? null : ((ValueComparer<string>)(((IProperty)passwordHashMethod).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(passwordHashMethod))), (source.GetCurrentValue<string>(passwordSalt) == null ? null : ((ValueComparer<string>)(((IProperty)passwordSalt).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(passwordSalt))))));
                 });
             runtimeEntityType.SetStoreGeneratedValuesFactory(
-                ISnapshot () => Snapshot.Empty);
+                ISnapshot () => ((ISnapshot)(new Snapshot<Guid>(((ValueComparer<Guid>)(((IProperty)id).GetValueComparer())).Snapshot(default(Guid))))));
             runtimeEntityType.SetTemporaryValuesFactory(
-                ISnapshot (IInternalEntry source) => Snapshot.Empty);
+                ISnapshot (IInternalEntry source) => ((ISnapshot)(new Snapshot<Guid>(default(Guid)))));
             runtimeEntityType.SetShadowValuesFactory(
                 ISnapshot (IDictionary<string, object> source) => Snapshot.Empty);
             runtimeEntityType.SetEmptyShadowValuesFactory(
@@ -396,7 +397,7 @@ namespace Manis.CompiledModels
                 originalValueCount: 8,
                 shadowCount: 0,
                 relationshipCount: 1,
-                storeGeneratedCount: 0));
+                storeGeneratedCount: 1));
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);
