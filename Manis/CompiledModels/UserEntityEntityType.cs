@@ -33,12 +33,11 @@ namespace Manis.CompiledModels
                 typeof(Guid),
                 propertyInfo: typeof(UserEntity).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(UserEntity).GetField("<Id>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: new Guid("00000000-0000-0000-0000-000000000000"));
             id.SetGetter(
                 Guid (UserEntity instance) => UserEntityUnsafeAccessors.Id(instance),
-                bool (UserEntity instance) => UserEntityUnsafeAccessors.Id(instance) == new Guid("00000000-0000-0000-0000-000000000000"));
+                bool (UserEntity instance) => ((object)UserEntityUnsafeAccessors.Id(instance)).Equals(((object)(new Guid("00000000-0000-0000-0000-000000000000")))));
             id.SetSetter(
                 UserEntity (UserEntity instance, Guid value) =>
                 {
@@ -52,7 +51,7 @@ namespace Manis.CompiledModels
                     return instance;
                 });
             id.SetAccessors(
-                Guid (IInternalEntry entry) => (entry.FlaggedAsStoreGenerated(0) ? entry.ReadStoreGeneratedValue<Guid>(0) : (entry.FlaggedAsTemporary(0) && UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))) == new Guid("00000000-0000-0000-0000-000000000000") ? entry.ReadTemporaryValue<Guid>(0) : UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))))),
+                Guid (IInternalEntry entry) => UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))),
                 Guid (IInternalEntry entry) => UserEntityUnsafeAccessors.Id(((UserEntity)(entry.Entity))),
                 Guid (IInternalEntry entry) => entry.ReadOriginalValue<Guid>(id, 0),
                 Guid (IInternalEntry entry) => ((InternalEntityEntry)(entry)).ReadRelationshipSnapshotValue<Guid>(id, 0));
@@ -61,11 +60,11 @@ namespace Manis.CompiledModels
                 originalValueIndex: 0,
                 shadowIndex: -1,
                 relationshipIndex: 0,
-                storeGenerationIndex: 0);
+                storeGenerationIndex: -1);
             id.TypeMapping = SqliteGuidTypeMapping.Default;
             id.SetCurrentValueComparer(new EntryCurrentValueComparer<Guid>(id));
             id.SetComparer(new ValueComparer<Guid>(
-                bool (Guid c1, Guid c2) => c1 == c2,
+                bool (Guid c1, Guid c2) => ((object)c1).Equals(((object)(c2))),
                 int (Guid c) => ((object)c).GetHashCode(),
                 Guid (Guid c) => c));
 
@@ -102,6 +101,10 @@ namespace Manis.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             activationCode.TypeMapping = SqliteStringTypeMapping.Default;
+            activationCode.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var email = runtimeEntityType.AddProperty(
                 "Email",
@@ -136,6 +139,10 @@ namespace Manis.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             email.TypeMapping = SqliteStringTypeMapping.Default;
+            email.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var isActivated = runtimeEntityType.AddProperty(
                 "IsActivated",
@@ -145,7 +152,7 @@ namespace Manis.CompiledModels
                 sentinel: false);
             isActivated.SetGetter(
                 bool (UserEntity instance) => UserEntityUnsafeAccessors.IsActivated(instance),
-                bool (UserEntity instance) => UserEntityUnsafeAccessors.IsActivated(instance) == false);
+                bool (UserEntity instance) => ((object)UserEntityUnsafeAccessors.IsActivated(instance)).Equals(((object)(false))));
             isActivated.SetSetter(
                 UserEntity (UserEntity instance, bool value) =>
                 {
@@ -184,6 +191,10 @@ namespace Manis.CompiledModels
                     bool (bool v) => v),
                 mappingInfo: new RelationalTypeMappingInfo(
                     storeTypeName: "INTEGER"));
+            isActivated.SetComparer(new ValueComparer<bool>(
+                bool (bool c1, bool c2) => ((object)c1).Equals(((object)(c2))),
+                int (bool c) => ((object)c).GetHashCode(),
+                bool (bool c) => c));
 
             var login = runtimeEntityType.AddProperty(
                 "Login",
@@ -218,6 +229,10 @@ namespace Manis.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             login.TypeMapping = SqliteStringTypeMapping.Default;
+            login.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var passwordHash = runtimeEntityType.AddProperty(
                 "PasswordHash",
@@ -252,6 +267,10 @@ namespace Manis.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             passwordHash.TypeMapping = SqliteStringTypeMapping.Default;
+            passwordHash.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var passwordHashMethod = runtimeEntityType.AddProperty(
                 "PasswordHashMethod",
@@ -286,6 +305,10 @@ namespace Manis.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             passwordHashMethod.TypeMapping = SqliteStringTypeMapping.Default;
+            passwordHashMethod.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var passwordSalt = runtimeEntityType.AddProperty(
                 "PasswordSalt",
@@ -320,6 +343,10 @@ namespace Manis.CompiledModels
                 relationshipIndex: -1,
                 storeGenerationIndex: -1);
             passwordSalt.TypeMapping = SqliteStringTypeMapping.Default;
+            passwordSalt.SetComparer(new ValueComparer<string>(
+                bool (string c1, string c2) => c1 == c2,
+                int (string c) => ((object)c).GetHashCode(),
+                string (string c) => c));
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });
@@ -348,9 +375,9 @@ namespace Manis.CompiledModels
                     return ((ISnapshot)(new Snapshot<Guid, string, string, bool, string, string, string, string>(((ValueComparer<Guid>)(((IProperty)id).GetValueComparer())).Snapshot(source.GetCurrentValue<Guid>(id)), (source.GetCurrentValue<string>(activationCode) == null ? null : ((ValueComparer<string>)(((IProperty)activationCode).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(activationCode))), (source.GetCurrentValue<string>(email) == null ? null : ((ValueComparer<string>)(((IProperty)email).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(email))), ((ValueComparer<bool>)(((IProperty)isActivated).GetValueComparer())).Snapshot(source.GetCurrentValue<bool>(isActivated)), (source.GetCurrentValue<string>(login) == null ? null : ((ValueComparer<string>)(((IProperty)login).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(login))), (source.GetCurrentValue<string>(passwordHash) == null ? null : ((ValueComparer<string>)(((IProperty)passwordHash).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(passwordHash))), (source.GetCurrentValue<string>(passwordHashMethod) == null ? null : ((ValueComparer<string>)(((IProperty)passwordHashMethod).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(passwordHashMethod))), (source.GetCurrentValue<string>(passwordSalt) == null ? null : ((ValueComparer<string>)(((IProperty)passwordSalt).GetValueComparer())).Snapshot(source.GetCurrentValue<string>(passwordSalt))))));
                 });
             runtimeEntityType.SetStoreGeneratedValuesFactory(
-                ISnapshot () => ((ISnapshot)(new Snapshot<Guid>(((ValueComparer<Guid>)(((IProperty)id).GetValueComparer())).Snapshot(default(Guid))))));
+                ISnapshot () => Snapshot.Empty);
             runtimeEntityType.SetTemporaryValuesFactory(
-                ISnapshot (IInternalEntry source) => ((ISnapshot)(new Snapshot<Guid>(default(Guid)))));
+                ISnapshot (IInternalEntry source) => Snapshot.Empty);
             runtimeEntityType.SetShadowValuesFactory(
                 ISnapshot (IDictionary<string, object> source) => Snapshot.Empty);
             runtimeEntityType.SetEmptyShadowValuesFactory(
@@ -369,7 +396,7 @@ namespace Manis.CompiledModels
                 originalValueCount: 8,
                 shadowCount: 0,
                 relationshipCount: 1,
-                storeGeneratedCount: 1));
+                storeGeneratedCount: 0));
             runtimeEntityType.AddAnnotation("Relational:FunctionName", null);
             runtimeEntityType.AddAnnotation("Relational:Schema", null);
             runtimeEntityType.AddAnnotation("Relational:SqlQuery", null);
