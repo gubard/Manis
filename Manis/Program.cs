@@ -72,7 +72,7 @@ builder.Services.AddScoped<IDbConnectionFactory>(sp =>
     var storageService = sp.GetRequiredService<IStorageService>();
     var file = storageService.GetDbDirectory().ToFile("manis.db");
 
-    return new SqliteDbConnectionFactory(new() { DataSource = $"Data Source={file}" });
+    return new SqliteDbConnectionFactory(file);
 });
 
 var app = builder.Build();

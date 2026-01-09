@@ -288,7 +288,7 @@ public class AuthenticationService : IAuthenticationService
 
         var query = new SqlQuery(
             UsersExt.SelectQuery
-                + $" WHERE {nameof(UserEntity.Login)} IN ({identities.ToParameterNames("Identity")}) AND {nameof(UserEntity.Email)} IN ({identities.ToParameterNames("Identity")})",
+                + $" WHERE {nameof(UserEntity.Login)} IN ({identities.ToParameterNames("Identity")}) OR {nameof(UserEntity.Email)} IN ({identities.ToParameterNames("Identity")})",
             identities.ToSqliteParameters("Identity")
         );
 
