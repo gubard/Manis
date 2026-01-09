@@ -1,10 +1,6 @@
-﻿using Manis.Services;
-using Nestor.Db.Models;
+﻿namespace Manis.Models;
 
-namespace Manis.Models;
-
-[SourceEntity(nameof(Id), typeof(IAuthenticationDbContext))]
-public partial class UserEntity
+public class UserEntity
 {
     public Guid Id { get; set; }
     public string Login { get; set; } = string.Empty;

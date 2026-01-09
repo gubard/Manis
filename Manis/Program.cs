@@ -8,9 +8,9 @@ using Manis.Contract.Services;
 using Manis.Helpers;
 using Manis.Models;
 using Manis.Services;
-using Microsoft.EntityFrameworkCore;
-using Nestor.Db.Sqlite.Helpers;
-using Nestor.Db.Sqlite.Services;
+using Nestor.Db.Helpers;
+using Nestor.Db.Models;
+using Nestor.Db.Services;
 using Zeus.Helpers;
 
 var migration = new Dictionary<int, string>();
@@ -67,14 +67,13 @@ builder.Services.AddTransient<JwtTokenFactoryOptions>(sp =>
     sp.GetConfigurationSection<JwtTokenFactoryOptions>("Jwt")
 );
 
-builder.Services.AddDbContext<ManisDbContext>(
-    (sp, options) =>
-    {
-        var storageService = sp.GetRequiredService<IStorageService>();
-        var file = storageService.GetDbDirectory().ToFile("manis.db");
-        options.UseSqlite($"Data Source={file}");
-    }
-);
+builder.Services.AddScoped<IDbConnectionFactory>(sp =>
+{
+    var storageService = sp.GetRequiredService<IStorageService>();
+    var file = storageService.GetDbDirectory().ToFile("manis.db");
+
+    return new SqliteDbConnectionFactory(new() { DataSource = $"Data Source={file}" });
+});
 
 var app = builder.Build();
 
@@ -113,5 +112,5 @@ app.MapPost(
     .WithName(RouteHelper.PostName);
 
 app.Services.CreateDbDirectory();
-await app.Services.MigrateDbAsync<ManisDbContext>(CancellationToken.None);
+await app.Services.MigrateDbAsync(CancellationToken.None);
 await app.RunAsync(CancellationToken.None);

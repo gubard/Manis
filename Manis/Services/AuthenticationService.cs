@@ -6,26 +6,27 @@ using Manis.Contract.Errors;
 using Manis.Contract.Models;
 using Manis.Contract.Services;
 using Manis.Models;
-using Microsoft.EntityFrameworkCore;
+using Nestor.Db.Helpers;
+using Nestor.Db.Models;
 using Zeus.Models;
 
 namespace Manis.Services;
 
 public class AuthenticationService : IAuthenticationService
 {
-    private readonly ManisDbContext _dbContext;
+    private readonly IDbConnectionFactory _factory;
     private readonly ITokenFactory _tokenFactory;
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
     private readonly IAuthenticationValidator _authenticationValidator;
 
     public AuthenticationService(
-        ManisDbContext dbContext,
+        IDbConnectionFactory factory,
         ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory,
         IAuthenticationValidator authenticationValidator
     )
     {
-        _dbContext = dbContext;
+        _factory = factory;
         _tokenFactory = tokenFactory;
         _hashServiceFactory = hashServiceFactory;
         _authenticationValidator = authenticationValidator;
@@ -41,7 +42,8 @@ public class AuthenticationService : IAuthenticationService
 
     private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
     {
-        var users = await CreateQuery(request).ToArrayAsync(ct);
+        await using var session = await _factory.CreateSessionAsync(ct);
+        var users = await session.GetUsersAsync(CreateQuery(request), ct);
 
         return CreateResponse(request, users);
     }
@@ -55,6 +57,23 @@ public class AuthenticationService : IAuthenticationService
         return PostCore(idempotentId, request, ct).ConfigureAwait(false);
     }
 
+    private SqlQuery CreateQuery(ManisPostRequest request)
+    {
+        var emails = request.CreateUsers.Select(x => x.Email).ToArray();
+        var logins = request.CreateUsers.Select(x => x.Login).ToArray();
+
+        var query = new SqlQuery(
+            UsersExt.SelectQuery
+                + $" WHERE {nameof(UserEntity.Login)} IN ({logins.ToParameterNames("Login")}) OR {nameof(UserEntity.Email)} IN ({emails.ToParameterNames("Email")})",
+            emails
+                .ToSqliteParameters(nameof(UserEntity.Email))
+                .Concat(logins.ToSqliteParameters(nameof(UserEntity.Login)))
+                .ToArray()
+        );
+
+        return query;
+    }
+
     private async ValueTask<ManisPostResponse> PostCore(
         Guid idempotentId,
         ManisPostRequest request,
@@ -62,12 +81,8 @@ public class AuthenticationService : IAuthenticationService
     )
     {
         var result = new ManisPostResponse();
-        var emails = request.CreateUsers.Select(x => x.Email).ToArray();
-        var login = request.CreateUsers.Select(x => x.Login).ToArray();
-
-        var users = await _dbContext
-            .Users.Where(x => emails.Contains(x.Email) || login.Contains(x.Login))
-            .ToArrayAsync(ct);
+        var session = await _factory.CreateSessionAsync(ct);
+        var users = await session.GetUsersAsync(CreateQuery(request), ct);
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -128,8 +143,7 @@ public class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            await UserEntity.AddEntitiesAsync(
-                _dbContext,
+            await session.AddEntitiesAsync(
                 id.ToString(),
                 idempotentId,
                 [
@@ -149,7 +163,7 @@ public class AuthenticationService : IAuthenticationService
             );
         }
 
-        await _dbContext.SaveChangesAsync(ct);
+        await session.CommitAsync(ct);
 
         return result;
     }
@@ -157,12 +171,9 @@ public class AuthenticationService : IAuthenticationService
     public ManisPostResponse Post(Guid idempotentId, ManisPostRequest request)
     {
         var result = new ManisPostResponse();
-        var emails = request.CreateUsers.Select(x => x.Email).ToArray();
-        var login = request.CreateUsers.Select(x => x.Login).ToArray();
-
-        var users = _dbContext
-            .Users.Where(x => emails.Contains(x.Email) || login.Contains(x.Login))
-            .ToArray();
+        var query = CreateQuery(request);
+        using var session = _factory.CreateSession();
+        var users = session.GetUsers(query).ToArray();
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -223,8 +234,7 @@ public class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            UserEntity.AddEntities(
-                _dbContext,
+            session.AddEntities(
                 id.ToString(),
                 idempotentId,
                 [
@@ -243,14 +253,15 @@ public class AuthenticationService : IAuthenticationService
             );
         }
 
-        _dbContext.SaveChanges();
+        session.Commit();
 
         return result;
     }
 
     public ManisGetResponse Get(ManisGetRequest request)
     {
-        var users = CreateQuery(request).ToArray();
+        using var session = _factory.CreateSession();
+        var users = session.GetUsers(CreateQuery(request));
 
         return CreateResponse(request, users);
     }
@@ -271,13 +282,17 @@ public class AuthenticationService : IAuthenticationService
         return result.ToArray();
     }
 
-    private IQueryable<UserEntity> CreateQuery(ManisGetRequest request)
+    private SqlQuery CreateQuery(ManisGetRequest request)
     {
         var identities = request.SignIns.Select(x => x.Key).ToArray();
 
-        return _dbContext.Users.Where(x =>
-            identities.Contains(x.Login) || identities.Contains(x.Email)
+        var query = new SqlQuery(
+            UsersExt.SelectQuery
+                + $" WHERE {nameof(UserEntity.Login)} IN ({identities.ToParameterNames("Identity")}) AND {nameof(UserEntity.Email)} IN ({identities.ToParameterNames("Identity")})",
+            identities.ToSqliteParameters("Identity")
         );
+
+        return query;
     }
 
     private ManisGetResponse CreateResponse(ManisGetRequest request, UserEntity[] users)
