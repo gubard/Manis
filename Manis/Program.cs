@@ -42,6 +42,10 @@ builder.Services.AddTransient<StringToUtf8>();
 builder.Services.AddTransient<BytesToHex>();
 builder.Services.AddTransient<IStorageService>(_ => new StorageService("Manis"));
 
+builder.Services.AddSingleton<IFactory<DbServiceOptions>>(_ => new DbServiceOptionsFactory(
+    new(true)
+));
+
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolver = ManisJsonContext.Resolver
 );

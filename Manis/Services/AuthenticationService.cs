@@ -18,18 +18,21 @@ public class AuthenticationService : IAuthenticationService
     private readonly ITokenFactory _tokenFactory;
     private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
     private readonly IAuthenticationValidator _authenticationValidator;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
 
     public AuthenticationService(
         IDbConnectionFactory factory,
         ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory,
-        IAuthenticationValidator authenticationValidator
+        IAuthenticationValidator authenticationValidator,
+        IFactory<DbServiceOptions> factoryOptions
     )
     {
         _factory = factory;
         _tokenFactory = tokenFactory;
         _hashServiceFactory = hashServiceFactory;
         _authenticationValidator = authenticationValidator;
+        _factoryOptions = factoryOptions;
     }
 
     public ConfiguredValueTaskAwaitable<ManisGetResponse> GetAsync(
@@ -82,6 +85,7 @@ public class AuthenticationService : IAuthenticationService
     {
         var result = new ManisPostResponse();
         var session = await _factory.CreateSessionAsync(ct);
+        var options = _factoryOptions.Create();
         var users = await session.GetUsersAsync(CreateQuery(request), ct);
 
         foreach (var createUser in request.CreateUsers)
@@ -146,6 +150,7 @@ public class AuthenticationService : IAuthenticationService
             await session.AddEntitiesAsync(
                 id.ToString(),
                 idempotentId,
+                options.IsUseEvents,
                 [
                     new()
                     {
@@ -173,6 +178,7 @@ public class AuthenticationService : IAuthenticationService
         var result = new ManisPostResponse();
         var query = CreateQuery(request);
         using var session = _factory.CreateSession();
+        var options = _factoryOptions.Create();
         var users = session.GetUsers(query).ToArray();
 
         foreach (var createUser in request.CreateUsers)
@@ -237,6 +243,7 @@ public class AuthenticationService : IAuthenticationService
             session.AddEntities(
                 id.ToString(),
                 idempotentId,
+                options.IsUseEvents,
                 [
                     new()
                     {
