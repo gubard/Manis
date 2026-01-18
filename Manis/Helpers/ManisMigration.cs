@@ -25,6 +25,18 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 "
             },
+            {
+                8,
+                "ALTER TABLE Users ADD COLUMN NormalizeEmail TEXT NOT NULL CHECK(length(NormalizeEmail) <= 255) DEFAULT '';"
+            },
+            {
+                9,
+                "ALTER TABLE Users ADD COLUMN NormalizeLogin TEXT NOT NULL CHECK(length(NormalizeLogin) <= 255) DEFAULT '';"
+            },
+            { 10, "UPDATE Users SET NormalizeEmail = UPPER(Email);" },
+            { 11, "UPDATE Users SET NormalizeLogin = UPPER(Login);" },
+            { 12, "CREATE UNIQUE INDEX idx_users_login ON Users(Login);" },
+            { 13, "CREATE UNIQUE INDEX idx_users_email ON Users(Email);" },
         }.ToFrozenDictionary();
     }
 }

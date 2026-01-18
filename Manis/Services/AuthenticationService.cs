@@ -14,12 +14,6 @@ namespace Manis.Services;
 
 public class AuthenticationService : IAuthenticationService
 {
-    private readonly IDbConnectionFactory _factory;
-    private readonly ITokenFactory _tokenFactory;
-    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
-    private readonly IAuthenticationValidator _authenticationValidator;
-    private readonly IFactory<DbServiceOptions> _factoryOptions;
-
     public AuthenticationService(
         IDbConnectionFactory factory,
         ITokenFactory tokenFactory,
@@ -43,14 +37,6 @@ public class AuthenticationService : IAuthenticationService
         return GetCore(request, ct).ConfigureAwait(false);
     }
 
-    private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
-    {
-        await using var session = await _factory.CreateSessionAsync(ct);
-        var users = await session.GetUsersAsync(CreateQuery(request), ct);
-
-        return CreateResponse(request, users);
-    }
-
     public ConfiguredValueTaskAwaitable<ManisPostResponse> PostAsync(
         Guid idempotentId,
         ManisPostRequest request,
@@ -58,6 +44,20 @@ public class AuthenticationService : IAuthenticationService
     )
     {
         return PostCore(idempotentId, request, ct).ConfigureAwait(false);
+    }
+
+    private readonly IDbConnectionFactory _factory;
+    private readonly ITokenFactory _tokenFactory;
+    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
+    private readonly IAuthenticationValidator _authenticationValidator;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
+
+    private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
+    {
+        await using var session = await _factory.CreateSessionAsync(ct);
+        var users = await session.GetUsersAsync(CreateQuery(request), ct);
+
+        return CreateResponse(request, users);
     }
 
     private SqlQuery CreateQuery(ManisPostRequest request)
@@ -156,6 +156,8 @@ public class AuthenticationService : IAuthenticationService
                     {
                         Login = createUser.Login,
                         Email = createUser.Email,
+                        NormalizeEmail = createUser.Email.ToUpperInvariant(),
+                        NormalizeLogin = createUser.Login.ToUpperInvariant(),
                         PasswordSalt = salt,
                         PasswordHash = _hashServiceFactory
                             .Create(NameHelper.Utf8Sha512Hex)
@@ -171,106 +173,6 @@ public class AuthenticationService : IAuthenticationService
         await session.CommitAsync(ct);
 
         return result;
-    }
-
-    public ManisPostResponse Post(Guid idempotentId, ManisPostRequest request)
-    {
-        var result = new ManisPostResponse();
-        var query = CreateQuery(request);
-        using var session = _factory.CreateSession();
-        var options = _factoryOptions.Create();
-        var users = session.GetUsers(query).ToArray();
-
-        foreach (var createUser in request.CreateUsers)
-        {
-            var errors = ValidateCreateUser(createUser);
-            result.ValidationErrors.AddRange(errors);
-
-            if (errors.Any())
-            {
-                continue;
-            }
-
-            var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
-
-            if (userByEmail is not null)
-            {
-                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
-
-                continue;
-            }
-
-            var userByLogin = users.SingleOrDefault(x => x.Login == createUser.Login);
-
-            if (userByLogin is not null)
-            {
-                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
-
-                continue;
-            }
-
-            if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
-            {
-                if (
-                    !result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error && error.Identity == createUser.Email
-                    )
-                )
-                {
-                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Email));
-                }
-
-                continue;
-            }
-
-            if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
-            {
-                if (
-                    !result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error && error.Identity == createUser.Login
-                    )
-                )
-                {
-                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Login));
-                }
-
-                continue;
-            }
-
-            var id = Guid.NewGuid();
-            var salt = Guid.NewGuid().ToString();
-
-            session.AddEntities(
-                id.ToString(),
-                idempotentId,
-                options.IsUseEvents,
-                [
-                    new()
-                    {
-                        Login = createUser.Login,
-                        Email = createUser.Email,
-                        PasswordSalt = salt,
-                        PasswordHash = _hashServiceFactory
-                            .Create(NameHelper.Utf8Sha512Hex)
-                            .ComputeHash($"{salt};{createUser.Password}"),
-                        PasswordHashMethod = NameHelper.Utf8Sha512Hex,
-                        Id = id,
-                    },
-                ]
-            );
-        }
-
-        session.Commit();
-
-        return result;
-    }
-
-    public ManisGetResponse Get(ManisGetRequest request)
-    {
-        using var session = _factory.CreateSession();
-        var users = session.GetUsers(CreateQuery(request));
-
-        return CreateResponse(request, users);
     }
 
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
