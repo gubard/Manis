@@ -84,7 +84,7 @@ public class AuthenticationService : IAuthenticationService
     )
     {
         var result = new ManisPostResponse();
-        var session = await _factory.CreateSessionAsync(ct);
+        await using var session = await _factory.CreateSessionAsync(ct);
         var options = _factoryOptions.Create();
         var users = await session.GetUsersAsync(CreateQuery(request), ct);
 
