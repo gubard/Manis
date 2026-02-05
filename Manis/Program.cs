@@ -25,6 +25,11 @@ foreach (var (key, value) in ManisMigration.Migrations)
     migration.Add(key, value);
 }
 
+foreach (var (key, value) in IdempotenceMigration.Migrations)
+{
+    migration.Add(key, value);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
