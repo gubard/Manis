@@ -8,6 +8,7 @@ using Manis.Contract.Services;
 using Manis.Models;
 using Nestor.Db.Helpers;
 using Nestor.Db.Models;
+using Nestor.Db.Services;
 using Zeus.Models;
 
 namespace Manis.Services;
@@ -55,12 +56,12 @@ public class AuthenticationService : IAuthenticationService
     private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
     {
         await using var session = await _factory.CreateSessionAsync(ct);
-        var users = await session.GetUsersAsync(CreateQuery(request), ct);
+        var users = await session.GetUsersAsync(CreateQuery(request, session), ct);
 
         return CreateResponse(request, users);
     }
 
-    private SqlQuery CreateQuery(ManisPostRequest request)
+    private SqlQuery CreateQuery(ManisPostRequest request, DbSession session)
     {
         var emails = request.CreateUsers.Select(x => x.Email).ToArray();
         var logins = request.CreateUsers.Select(x => x.Login).ToArray();
@@ -68,9 +69,9 @@ public class AuthenticationService : IAuthenticationService
         var query = new SqlQuery(
             UsersExt.SelectQuery
                 + $" WHERE {nameof(UserEntity.Login)} IN ({logins.ToParameterNames("Login")}) OR {nameof(UserEntity.Email)} IN ({emails.ToParameterNames("Email")})",
-            emails
-                .ToSqliteParameters(nameof(UserEntity.Email))
-                .Concat(logins.ToSqliteParameters(nameof(UserEntity.Login)))
+            session
+                .ToDbParameters(emails, nameof(UserEntity.Email))
+                .Concat(session.ToDbParameters(logins, nameof(UserEntity.Login)))
                 .ToArray()
         );
 
@@ -86,7 +87,7 @@ public class AuthenticationService : IAuthenticationService
         var result = new ManisPostResponse();
         await using var session = await _factory.CreateSessionAsync(ct);
         var options = _factoryOptions.Create();
-        var users = await session.GetUsersAsync(CreateQuery(request), ct);
+        var users = await session.GetUsersAsync(CreateQuery(request, session), ct);
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -191,14 +192,14 @@ public class AuthenticationService : IAuthenticationService
         return result.ToArray();
     }
 
-    private SqlQuery CreateQuery(ManisGetRequest request)
+    private SqlQuery CreateQuery(ManisGetRequest request, DbSession session)
     {
         var identities = request.SignIns.Select(x => x.Key).ToArray();
 
         var query = new SqlQuery(
             UsersExt.SelectQuery
                 + $" WHERE {nameof(UserEntity.Login)} IN ({identities.ToParameterNames("Identity")}) OR {nameof(UserEntity.Email)} IN ({identities.ToParameterNames("Identity")})",
-            identities.ToSqliteParameters("Identity")
+            session.ToDbParameters(identities, "Identity")
         );
 
         return query;
