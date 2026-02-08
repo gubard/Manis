@@ -43,10 +43,12 @@ public class AuthenticationValidator : IAuthenticationValidator
                 {
                     return
                     [
-                        new PropertyContainsInvalidValueValidationError<char>(
+                        new PropertyValueValidationError(
                             "Login",
-                            value[index],
-                            ValidLoginChars.ToCharArray()
+                            new ContainsInvalidValueValidationError<char>(
+                                value[index],
+                                ValidLoginChars.ToCharArray()
+                            )
                         ),
                     ];
                 }
