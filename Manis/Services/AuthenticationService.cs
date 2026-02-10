@@ -69,9 +69,9 @@ public class AuthenticationService : IAuthenticationService
         var query = new SqlQuery(
             UsersExt.SelectQuery
                 + $" WHERE {nameof(UserEntity.Login)} IN ({logins.ToParameterNames("Login")}) OR {nameof(UserEntity.Email)} IN ({emails.ToParameterNames("Email")})",
-            session
-                .ToDbParameters(emails, nameof(UserEntity.Email))
-                .Concat(session.ToDbParameters(logins, nameof(UserEntity.Login)))
+            emails
+                .ToQueryParameters(nameof(UserEntity.Email))
+                .Concat(logins.ToQueryParameters(nameof(UserEntity.Login)))
                 .ToArray()
         );
 
@@ -199,7 +199,7 @@ public class AuthenticationService : IAuthenticationService
         var query = new SqlQuery(
             UsersExt.SelectQuery
                 + $" WHERE {nameof(UserEntity.Login)} IN ({identities.ToParameterNames("Identity")}) OR {nameof(UserEntity.Email)} IN ({identities.ToParameterNames("Identity")})",
-            session.ToDbParameters(identities, "Identity")
+            identities.ToQueryParameters("Identity")
         );
 
         return query;
