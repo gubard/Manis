@@ -1,6 +1,6 @@
 ﻿namespace Manis.Contract.Models;
 
-public class ManisPostRequest
+public sealed class ManisPostRequest
 {
     public CreateUser[] CreateUsers { get; set; } = [];
 }

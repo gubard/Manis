@@ -1,6 +1,6 @@
 ﻿namespace Manis.Models;
 
-public class JwtTokenFactoryOptions
+public sealed class JwtTokenFactoryOptions
 {
     public string Key { get; set; } = string.Empty;
     public ushort ExpiresDays { get; set; }

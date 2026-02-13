@@ -11,7 +11,7 @@ namespace Manis.Services;
 
 public interface ITokenFactory : IFactory<UserTokenClaims, TokenResult>, IFactory<TokenResult>;
 
-public class JwtTokenFactory : ITokenFactory
+public sealed class JwtTokenFactory : ITokenFactory
 {
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly JwtTokenFactoryOptions _options;

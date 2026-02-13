@@ -7,7 +7,7 @@ namespace Manis.Contract.Services;
 
 public interface IAuthenticationValidator : IValidator<string>;
 
-public class AuthenticationValidator : IAuthenticationValidator
+public sealed class AuthenticationValidator : IAuthenticationValidator
 {
     private const string ValidLoginChars =
         StringHelper.UpperLatin + StringHelper.LowerLatin + StringHelper.Number + "+-";

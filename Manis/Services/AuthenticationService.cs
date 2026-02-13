@@ -13,7 +13,7 @@ using Zeus.Models;
 
 namespace Manis.Services;
 
-public class AuthenticationService : IAuthenticationService
+public sealed class AuthenticationService : IAuthenticationService
 {
     public AuthenticationService(
         IDbConnectionFactory factory,

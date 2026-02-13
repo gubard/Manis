@@ -13,7 +13,7 @@ namespace Manis.Contract.Models;
 [JsonSerializable(typeof(AlreadyExistsValidationError))]
 [JsonSerializable(typeof(NotFoundValidationError))]
 [JsonSerializable(typeof(InvalidPasswordValidationError))]
-public partial class ManisJsonContext : JsonSerializerContext
+public sealed partial class ManisJsonContext : JsonSerializerContext
 {
     public static readonly IJsonTypeInfoResolver Resolver;
 
