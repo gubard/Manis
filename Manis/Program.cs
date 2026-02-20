@@ -11,6 +11,7 @@ using Manis.Services;
 using Nestor.Db.Helpers;
 using Nestor.Db.Models;
 using Nestor.Db.Services;
+using Nestor.Db.Sqlite.Services;
 using Zeus.Helpers;
 
 var migration = new Dictionary<int, string>();
@@ -36,6 +37,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddCors(o => o.AddAllowAllPolicy());
 builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
@@ -93,6 +95,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 
 app.MapPost(
         RouteHelper.Get,
