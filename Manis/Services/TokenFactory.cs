@@ -13,9 +13,6 @@ public interface ITokenFactory : IFactory<UserTokenClaims, TokenResult>, IFactor
 
 public sealed class JwtTokenFactory : ITokenFactory
 {
-    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
-    private readonly JwtTokenFactoryOptions _options;
-
     public JwtTokenFactory(
         JwtTokenFactoryOptions options,
         JwtSecurityTokenHandler jwtSecurityTokenHandler
@@ -75,6 +72,9 @@ public sealed class JwtTokenFactory : ITokenFactory
 
         return new() { RefreshToken = refreshJwt, Token = jwt };
     }
+
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly JwtTokenFactoryOptions _options;
 
     private string CreateToken(
         SigningCredentials signingCredentials,
