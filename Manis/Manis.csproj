@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Gaia\Gaia\Gaia.csproj" />
     <ProjectReference Include="..\..\Nestor\Nestor.Db\Nestor.Db.csproj" />
+    <ProjectReference Include="..\..\Nestor\Nestor.Db.LiteDb\Nestor.Db.LiteDb.csproj" />
     <ProjectReference Include="..\..\Zeus\Zeus\Zeus.csproj" />
     <ProjectReference Include="..\Manis.Contract\Manis.Contract.csproj" />
     <ProjectReference

@@ -38,7 +38,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddCors(o => o.AddAllowAllPolicy());
-builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
+builder.Services.AddTransient<IAuthenticationService, AdoAuthenticationService>();
 builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
 builder.Services.AddTransient<IMigrator>(_ => new Migrator(migration.ToFrozenDictionary()));

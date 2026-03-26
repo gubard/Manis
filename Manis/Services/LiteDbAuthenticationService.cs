@@ -6,17 +6,16 @@ using Manis.Contract.Errors;
 using Manis.Contract.Models;
 using Manis.Contract.Services;
 using Manis.Models;
-using Nestor.Db.Helpers;
+using Nestor.Db.LiteDb.Services;
 using Nestor.Db.Models;
-using Nestor.Db.Services;
 using Zeus.Models;
 
 namespace Manis.Services;
 
-public sealed class AuthenticationService : IAuthenticationService
+public sealed class LiteDbAuthenticationService : IAuthenticationService
 {
-    public AuthenticationService(
-        IDbConnectionFactory factory,
+    public LiteDbAuthenticationService(
+        IDatabaseFactory factory,
         ITokenFactory tokenFactory,
         IFactory<string, IHashService<string, string>> hashServiceFactory,
         IAuthenticationValidator authenticationValidator,
@@ -35,7 +34,12 @@ public sealed class AuthenticationService : IAuthenticationService
         CancellationToken ct
     )
     {
-        return GetCore(request, ct).ConfigureAwait(false);
+        using var database = _factory.Create();
+        var collection = database.GetUserEntityCollection();
+        var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
+        var response = CreateResponse(request, users);
+
+        return TaskHelper.FromResult(response);
     }
 
     public ConfiguredValueTaskAwaitable<ManisPostResponse> PostAsync(
@@ -44,50 +48,11 @@ public sealed class AuthenticationService : IAuthenticationService
         CancellationToken ct
     )
     {
-        return PostCore(idempotentId, request, ct).ConfigureAwait(false);
-    }
-
-    private readonly IDbConnectionFactory _factory;
-    private readonly ITokenFactory _tokenFactory;
-    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
-    private readonly IAuthenticationValidator _authenticationValidator;
-    private readonly IFactory<DbServiceOptions> _factoryOptions;
-
-    private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
-    {
-        await using var session = await _factory.CreateSessionAsync(ct);
-        var users = await session.GetUsersAsync(CreateQuery(request, session), ct);
-
-        return CreateResponse(request, users);
-    }
-
-    private SqlQuery CreateQuery(ManisPostRequest request, DbSession session)
-    {
-        var emails = request.CreateUsers.Select(x => x.Email).ToArray();
-        var logins = request.CreateUsers.Select(x => x.Login).ToArray();
-
-        var query = new SqlQuery(
-            UsersExt.SelectQuery
-                + $" WHERE {nameof(UserEntity.Login)} IN ({logins.ToParameterNames("Login")}) OR {nameof(UserEntity.Email)} IN ({emails.ToParameterNames("Email")})",
-            emails
-                .ToQueryParameters(nameof(UserEntity.Email))
-                .Concat(logins.ToQueryParameters(nameof(UserEntity.Login)))
-                .ToArray()
-        );
-
-        return query;
-    }
-
-    private async ValueTask<ManisPostResponse> PostCore(
-        Guid idempotentId,
-        ManisPostRequest request,
-        CancellationToken ct
-    )
-    {
         var result = new ManisPostResponse();
-        await using var session = await _factory.CreateSessionAsync(ct);
+        using var database = _factory.Create();
+        var collection = database.GetUserEntityCollection();
         var options = _factoryOptions.Create();
-        var users = await session.GetUsersAsync(CreateQuery(request, session), ct);
+        var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
 
         foreach (var createUser in request.CreateUsers)
         {
@@ -148,7 +113,7 @@ public sealed class AuthenticationService : IAuthenticationService
             var id = Guid.NewGuid();
             var salt = Guid.NewGuid().ToString();
 
-            await session.AddEntitiesAsync(
+            database.AddEntities(
                 id.ToString(),
                 idempotentId,
                 options.IsUseEvents,
@@ -166,15 +131,20 @@ public sealed class AuthenticationService : IAuthenticationService
                         PasswordHashMethod = NameHelper.Utf8Sha512Hex,
                         Id = id,
                     },
-                ],
-                ct
+                ]
             );
         }
 
-        await session.CommitAsync(ct);
+        database.SaveChanges();
 
-        return result;
+        return TaskHelper.FromResult(result);
     }
+
+    private readonly IDatabaseFactory _factory;
+    private readonly ITokenFactory _tokenFactory;
+    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
+    private readonly IAuthenticationValidator _authenticationValidator;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
 
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
     {
@@ -190,19 +160,6 @@ public sealed class AuthenticationService : IAuthenticationService
         );
 
         return result.ToArray();
-    }
-
-    private SqlQuery CreateQuery(ManisGetRequest request, DbSession session)
-    {
-        var identities = request.SignIns.Select(x => x.Key).ToArray();
-
-        var query = new SqlQuery(
-            UsersExt.SelectQuery
-                + $" WHERE {nameof(UserEntity.Login)} IN ({identities.ToParameterNames("Identity")}) OR {nameof(UserEntity.Email)} IN ({identities.ToParameterNames("Identity")})",
-            identities.ToQueryParameters("Identity")
-        );
-
-        return query;
     }
 
     private ManisGetResponse CreateResponse(ManisGetRequest request, UserEntity[] users)
