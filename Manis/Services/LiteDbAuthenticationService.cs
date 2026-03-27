@@ -34,12 +34,7 @@ public sealed class LiteDbAuthenticationService : IAuthenticationService
         CancellationToken ct
     )
     {
-        using var database = _factory.Create();
-        var collection = database.GetUserEntityCollection();
-        var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
-        var response = CreateResponse(request, users);
-
-        return TaskHelper.FromResult(response);
+        return GetCore(request, ct).ConfigureAwait(false);
     }
 
     public ConfiguredValueTaskAwaitable<ManisPostResponse> PostAsync(
@@ -48,8 +43,23 @@ public sealed class LiteDbAuthenticationService : IAuthenticationService
         CancellationToken ct
     )
     {
+        return PostCore(idempotentId, request, ct).ConfigureAwait(false);
+    }
+
+    private readonly IDatabaseFactory _factory;
+    private readonly ITokenFactory _tokenFactory;
+    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
+    private readonly IAuthenticationValidator _authenticationValidator;
+    private readonly IFactory<DbServiceOptions> _factoryOptions;
+
+    private async ValueTask<ManisPostResponse> PostCore(
+        Guid idempotentId,
+        ManisPostRequest request,
+        CancellationToken ct
+    )
+    {
         var result = new ManisPostResponse();
-        using var database = _factory.Create();
+        using var database = await _factory.CreateAsync(ct);
         var collection = database.GetUserEntityCollection();
         var options = _factoryOptions.Create();
         var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
@@ -135,16 +145,20 @@ public sealed class LiteDbAuthenticationService : IAuthenticationService
             );
         }
 
-        database.SaveChanges();
+        await database.SaveChangesAsync(ct);
 
-        return TaskHelper.FromResult(result);
+        return result;
     }
 
-    private readonly IDatabaseFactory _factory;
-    private readonly ITokenFactory _tokenFactory;
-    private readonly IFactory<string, IHashService<string, string>> _hashServiceFactory;
-    private readonly IAuthenticationValidator _authenticationValidator;
-    private readonly IFactory<DbServiceOptions> _factoryOptions;
+    private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
+    {
+        using var database = await _factory.CreateAsync(ct);
+        var collection = database.GetUserEntityCollection();
+        var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
+        var response = CreateResponse(request, users);
+
+        return response;
+    }
 
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
     {
