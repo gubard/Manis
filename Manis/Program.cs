@@ -47,7 +47,11 @@ builder.Services.AddTransient<SHA512>(_ => SHA512.Create());
 builder.Services.AddTransient<Sha512HashService>();
 builder.Services.AddTransient<StringToUtf8>();
 builder.Services.AddTransient<BytesToHex>();
-builder.Services.AddTransient<IStorageService>(_ => new StorageService("Manis"));
+
+builder.Services.AddTransient<IStorageService>(sp => new StorageService(
+    "Manis",
+    sp.GetRequiredService<ILogger<StorageService>>()
+));
 
 builder.Services.AddSingleton<IFactory<DbServiceOptions>>(_ => new DbServiceOptionsFactory(
     new(true)
