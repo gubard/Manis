@@ -9,6 +9,7 @@ using Manis.Helpers;
 using Manis.Models;
 using Manis.Services;
 using Nestor.Db.Helpers;
+using Nestor.Db.LiteDb.Services;
 using Nestor.Db.Models;
 using Nestor.Db.Services;
 using Nestor.Db.Sqlite.Services;
@@ -38,7 +39,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddCors(o => o.AddAllowAllPolicy());
-builder.Services.AddTransient<IAuthenticationService, AdoAuthenticationService>();
+builder.Services.AddTransient<IAuthenticationService, LiteDbAuthenticationService>();
+builder.Services.AddSingleton<IDatabaseFactory, ValueDatabaseFactory>();
+
+builder.Services.AddSingleton<IDatabase>(sp =>
+{
+    var storageService = sp.GetRequiredService<IStorageService>();
+    var file = storageService.GetDbDirectory().ToFile("manis.litedb");
+
+    return new Database(new(file.FullName));
+});
+
 builder.Services.AddTransient<IAuthenticationValidator, AuthenticationValidator>();
 builder.Services.AddTransient<ITokenFactory, JwtTokenFactory>();
 builder.Services.AddTransient<IMigrator>(_ => new Migrator(migration.ToFrozenDictionary()));
