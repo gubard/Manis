@@ -59,105 +59,127 @@ public sealed class LiteDbAuthenticationService : IAuthenticationService
     )
     {
         var result = new ManisPostResponse();
-        using var database = await _factory.CreateAsync(ct);
-        var collection = database.GetUserEntityCollection();
-        var options = _factoryOptions.Create();
-        var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
+        var database = await _factory.CreateAsync(ct);
 
-        foreach (var createUser in request.CreateUsers)
-        {
-            var errors = ValidateCreateUser(createUser);
-            result.ValidationErrors.AddRange(errors);
-
-            if (errors.Any())
+        return await database.ExecuteAsync(
+            db =>
             {
-                continue;
-            }
+                var collection = db.GetUserEntityCollection();
+                var options = _factoryOptions.Create();
+                var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
 
-            var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
-
-            if (userByEmail is not null)
-            {
-                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Email));
-
-                continue;
-            }
-
-            var userByLogin = users.SingleOrDefault(x => x.Login == createUser.Login);
-
-            if (userByLogin is not null)
-            {
-                result.ValidationErrors.Add(new AlreadyExistsValidationError(createUser.Login));
-
-                continue;
-            }
-
-            if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
-            {
-                if (
-                    !result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error && error.Identity == createUser.Email
-                    )
-                )
+                foreach (var createUser in request.CreateUsers)
                 {
-                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Email));
-                }
+                    var errors = ValidateCreateUser(createUser);
+                    result.ValidationErrors.AddRange(errors);
 
-                continue;
-            }
-
-            if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
-            {
-                if (
-                    !result.ValidationErrors.Any(x =>
-                        x is DuplicationValidationError error && error.Identity == createUser.Login
-                    )
-                )
-                {
-                    result.ValidationErrors.Add(new DuplicationValidationError(createUser.Login));
-                }
-
-                continue;
-            }
-
-            var id = Guid.NewGuid();
-            var salt = Guid.NewGuid().ToString();
-
-            database.AddEntities(
-                id.ToString(),
-                idempotentId,
-                options.IsUseEvents,
-                [
-                    new()
+                    if (errors.Any())
                     {
-                        Login = createUser.Login,
-                        Email = createUser.Email,
-                        NormalizeEmail = createUser.Email.ToUpperInvariant(),
-                        NormalizeLogin = createUser.Login.ToUpperInvariant(),
-                        PasswordSalt = salt,
-                        PasswordHash = _hashServiceFactory
-                            .Create(NameHelper.Utf8Sha512Hex)
-                            .ComputeHash($"{salt};{createUser.Password}"),
-                        PasswordHashMethod = NameHelper.Utf8Sha512Hex,
-                        Id = id,
-                    },
-                ]
-            );
-        }
+                        continue;
+                    }
 
-        await database.SaveChangesAsync(ct);
+                    var userByEmail = users.SingleOrDefault(x => x.Email == createUser.Email);
 
-        return result;
+                    if (userByEmail is not null)
+                    {
+                        result.ValidationErrors.Add(
+                            new AlreadyExistsValidationError(createUser.Email)
+                        );
+
+                        continue;
+                    }
+
+                    var userByLogin = users.SingleOrDefault(x => x.Login == createUser.Login);
+
+                    if (userByLogin is not null)
+                    {
+                        result.ValidationErrors.Add(
+                            new AlreadyExistsValidationError(createUser.Login)
+                        );
+
+                        continue;
+                    }
+
+                    if (request.CreateUsers.Count(x => x.Email == createUser.Email) > 1)
+                    {
+                        if (
+                            !result.ValidationErrors.Any(x =>
+                                x is DuplicationValidationError error
+                                && error.Identity == createUser.Email
+                            )
+                        )
+                        {
+                            result.ValidationErrors.Add(
+                                new DuplicationValidationError(createUser.Email)
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    if (request.CreateUsers.Count(x => x.Login == createUser.Login) > 1)
+                    {
+                        if (
+                            !result.ValidationErrors.Any(x =>
+                                x is DuplicationValidationError error
+                                && error.Identity == createUser.Login
+                            )
+                        )
+                        {
+                            result.ValidationErrors.Add(
+                                new DuplicationValidationError(createUser.Login)
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    var id = Guid.NewGuid();
+                    var salt = Guid.NewGuid().ToString();
+
+                    db.AddEntities(
+                        id.ToString(),
+                        idempotentId,
+                        options.IsUseEvents,
+                        [
+                            new()
+                            {
+                                Login = createUser.Login,
+                                Email = createUser.Email,
+                                NormalizeEmail = createUser.Email.ToUpperInvariant(),
+                                NormalizeLogin = createUser.Login.ToUpperInvariant(),
+                                PasswordSalt = salt,
+                                PasswordHash = _hashServiceFactory
+                                    .Create(NameHelper.Utf8Sha512Hex)
+                                    .ComputeHash($"{salt};{createUser.Password}"),
+                                PasswordHashMethod = NameHelper.Utf8Sha512Hex,
+                                Id = id,
+                            },
+                        ]
+                    );
+                }
+
+                return result;
+            },
+            ct
+        );
     }
 
     private async ValueTask<ManisGetResponse> GetCore(ManisGetRequest request, CancellationToken ct)
     {
-        using var database = await _factory.CreateAsync(ct);
-        var collection = database.GetUserEntityCollection();
-        var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
-        var response = CreateResponse(request, users);
+        var database = await _factory.CreateAsync(ct);
 
-        return response;
+        return await database.ExecuteAsync(
+            db =>
+            {
+                var collection = db.GetUserEntityCollection();
+                var users = collection.FindAll().Select(x => x.ToUserEntity()).ToArray();
+                var response = CreateResponse(request, users);
+
+                return response;
+            },
+            ct
+        );
     }
 
     private ValidationError[] ValidateCreateUser(CreateUser createUser)
